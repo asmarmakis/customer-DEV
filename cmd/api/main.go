@@ -15,6 +15,11 @@ import (
 func main() {
 	r := gin.Default()
 
+	// Set trusted proxies (tambahkan ini untuk mengatasi warning)
+	r.SetTrustedProxies([]string{"127.0.0.1", "::1"}) // localhost only
+	// Atau untuk production:
+	// r.SetTrustedProxies([]string{"192.168.1.0/24"}) // sesuaikan dengan network Anda
+
 	// Add CORS middleware
 	r.Use(middleware.CORSMiddleware())
 
@@ -35,5 +40,6 @@ func main() {
 	// Static files
 	r.Static("/uploads", "./uploads")
 
-	r.Run(":9000")
+	// Ganti port 9000 dengan port lain yang tersedia
+	r.Run(":8080") // atau :3001, :5000, dll
 }
