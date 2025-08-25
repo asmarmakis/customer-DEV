@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	// Hapus import "gorm.io/gorm" karena tidak digunakan
+	"gorm.io/gorm"
 )
 
 // @Summary Create address for customer
@@ -42,15 +42,23 @@ func CreateAddress(c *gin.Context) {
 		return
 	}
 
-	// Hapus variabel customerID yang tidak digunakan
-	// customerID := c.Param("id") // Jika dari endpoint /customers/{id}/addresses
+	// Validate customer exists
+	var customer entity.Customer
+	if err := config.DB.First(&customer, req.CustomerID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Customer not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to validate customer"})
+		}
+		return
+	}
 
 	address := entity.Address{
-		// CustomerID: customer.ID, // Akan diset sesuai kebutuhan
-		Name:    req.Name,
-		Address: req.Address,
-		Main:    req.IsMain,
-		Active:  req.Active,
+		CustomerID: req.CustomerID,
+		Name:       req.Name,
+		Address:    req.Address,
+		Main:       req.IsMain,
+		Active:     req.Active,
 	}
 
 	result := config.DB.Create(&address)

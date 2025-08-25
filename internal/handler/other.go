@@ -9,7 +9,7 @@ import (
 	"customer-api/internal/entity"
 
 	"github.com/gin-gonic/gin"
-	// Hapus import "gorm.io/gorm" karena tidak digunakan
+	"gorm.io/gorm"
 )
 
 type OtherInput struct {
@@ -246,9 +246,19 @@ func CreateOther(c *gin.Context) {
 		return
 	}
 
-	// Hapus validasi customer exists karena CustomerID tidak ada di request
+	// Validate customer exists
+	var customer entity.Customer
+	if err := config.DB.First(&customer, req.CustomerID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Customer not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to validate customer"})
+		}
+		return
+	}
+
 	other := entity.Other{
-		// CustomerID: req.CustomerID, // Akan diset sesuai kebutuhan
+		CustomerID: req.CustomerID,
 		Key:        req.Key,
 		Value:      req.Value,
 		Active:     req.Active,

@@ -8,7 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
+	"fmt"
+	"gorm.io/gorm"
 	"github.com/gin-gonic/gin"
 )
 
@@ -68,99 +69,6 @@ func GetCustomers(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-//
-//	@Param customer body dto.CreateCustomerRequest true "Customer data" SchemaExample({
-//	  "name": "PT Digital Inovasi Indonesia",
-//	  "brandName": "DigiInno",
-//	  "code": "DIGI",
-//	  "accountManagerId": "AM-001",
-//	  "logo": null,
-//	  "addresses": [
-//	    {
-//	      "name": "Head Office",
-//	      "address": "Jl. Sudirman No. 123, Jakarta Selatan",
-//	      "isMain": true,
-//	      "active": true
-//	    },
-//	    {
-//	      "name": "Branch Office",
-//	      "address": "Jl. Asia Afrika No. 45, Bandung",
-//	      "isMain": false,
-//	      "active": true
-//	    }
-//	  ],
-//	  "socials": [
-//	    {
-//	      "platform": "Instagram",
-//	      "handle": "@digiinno_id",
-//	      "active": true
-//	    },
-//	    {
-//	      "platform": "LinkedIn",
-//	      "handle": "digital-inovasi-indonesia",
-//	      "active": true
-//	    }
-//	  ],
-//	  "contacts": [
-//	    {
-//	      "name": "Budi Santoso",
-//	      "birthdate": "1985-03-15",
-//	      "jobPosition": "CEO",
-//	      "email": "budi@digiinno.com",
-//	      "phone": "021-5551234",
-//	      "mobile": "0812-3456-7890",
-//	      "isMain": true,
-//	      "active": true
-//	    },
-//	    {
-//	      "name": "Sari Dewi",
-//	      "birthdate": "1988-07-22",
-//	      "jobPosition": "CTO",
-//	      "email": "sari@digiinno.com",
-//	      "phone": "021-5551235",
-//	      "mobile": "0813-4567-8901",
-//	      "isMain": false,
-//	      "active": true
-//	    }
-//	  ],
-//	  "structures": [
-//	    {
-//	      "tempKey": "1",
-//	      "parentKey": null,
-//	      "name": "Board of Directors",
-//	      "level": 1,
-//	      "address": "Jakarta",
-//	      "active": true
-//	    },
-//	    {
-//	      "tempKey": "2",
-//	      "parentKey": "1",
-//	      "name": "Technology Division",
-//	      "level": 2,
-//	      "address": "Jakarta",
-//	      "active": true
-//	    }
-//	  ],
-//	  "groups": {
-//	    "industryId": "1",
-//	    "industryActive": true,
-//	    "parentGroupId": "2",
-//	    "parentGroupActive": true
-//	  },
-//	  "others": [
-//	    {
-//	      "key": "company_size",
-//	      "value": "50-100 employees",
-//	      "active": true
-//	    },
-//	    {
-//	      "key": "established_year",
-//	      "value": "2015",
-//	      "active": true
-//	    }
-//	  ]
-//	})
-//
 // @Success 201 {object} entity.Customer
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 401 {object} dto.ErrorResponse
@@ -181,24 +89,17 @@ func CreateCustomer(c *gin.Context) {
 		}
 	}()
 
-	// Di dalam fungsi CreateCustomer, tambahkan setelah Logo assignment:
-	// Create customer entity
+	// Create customer
 	customer := entity.Customer{
 		Name:             req.Name,
 		BrandName:        req.BrandName,
 		Code:             req.Code,
 		AccountManagerId: req.AccountManagerId,
-		Status:           "Active", // Default status
+		Status:           req.StatusName, // Gunakan req.StatusName dari request body
 	}
 
-	// Set logo if provided
 	if req.Logo != nil {
 		customer.Logo = *req.Logo
-	}
-
-	// Set logo_small if provided
-	if req.LogoSmall != nil {
-		customer.LogoSmall = *req.LogoSmall
 	}
 
 	if err := tx.Create(&customer).Error; err != nil {
@@ -313,23 +214,23 @@ func CreateCustomer(c *gin.Context) {
 
 	// Handle groups (industry and parent group)
 	// Note: This assumes groups already exist in the database
-	// Hapus: for _, group := range req.Groups {
-	if req.Groups.IndustryID != "" && req.Groups.IndustryActive {
-		// Find industry group and associate
-		var industryGroup entity.Group
-		if err := tx.Where("id = ?", req.Groups.IndustryID).First(&industryGroup).Error; err == nil {
-			tx.Model(&customer).Association("Groups").Append(&industryGroup)
+	for _, group := range req.Groups {
+		if group.IndustryID != "" && group.IndustryActive {
+			// Find industry group and associate
+			var industryGroup entity.Group
+			if err := tx.Where("id = ?", group.IndustryID).First(&industryGroup).Error; err == nil {
+				tx.Model(&customer).Association("Groups").Append(&industryGroup)
+			}
 		}
-	}
 
-	if req.Groups.ParentGroupID != "" && req.Groups.ParentGroupActive {
-		// Find parent group and associate
-		var parentGroup entity.Group
-		if err := tx.Where("id = ?", req.Groups.ParentGroupID).First(&parentGroup).Error; err == nil {
-			tx.Model(&customer).Association("Groups").Append(&parentGroup)
+		if group.ParentGroupID != "" && group.ParentGroupActive {
+			// Find parent group and associate
+			var parentGroup entity.Group
+			if err := tx.Where("id = ?", group.ParentGroupID).First(&parentGroup).Error; err == nil {
+				tx.Model(&customer).Association("Groups").Append(&parentGroup)
+			}
 		}
 	}
-	// Hapus: }
 
 	// Commit transaction
 	if err := tx.Commit().Error; err != nil {
@@ -341,62 +242,7 @@ func CreateCustomer(c *gin.Context) {
 	var createdCustomer entity.Customer
 	config.DB.Preload("Addresses").Preload("Sosmeds").Preload("Contacts").Preload("Structures").Preload("Groups").Preload("Others").First(&createdCustomer, customer.ID)
 
-	// Mapping manual untuk response
-	response := dto.CustomerResponse{
-		ID:               createdCustomer.ID,
-		Name:             createdCustomer.Name,
-		BrandName:        createdCustomer.BrandName,
-		Code:             createdCustomer.Code,
-		AccountManagerId: createdCustomer.AccountManagerId,
-		/*  Email:            createdCustomer.Email,
-		    Phone:            createdCustomer.Phone,
-		    Website:          createdCustomer.Website,
-		    Description:      createdCustomer.Description, */
-		Logo:        createdCustomer.Logo,
-		LogoSmall:   createdCustomer.LogoSmall,
-		Status:      createdCustomer.Status,
-		Category:    createdCustomer.Category,
-		Rating:      createdCustomer.Rating,
-		AverageCost: createdCustomer.AverageCost,
-		CreatedAt:   createdCustomer.CreatedAt,
-		UpdatedAt:   createdCustomer.UpdatedAt,
-	}
-
-	// Mapping addresses
-	for _, addr := range createdCustomer.Addresses {
-		response.Addresses = append(response.Addresses, dto.AddressResponse{
-			Name:    addr.Name,
-			Address: addr.Address,
-			IsMain:  addr.Main,
-			Active:  addr.Active,
-		})
-	}
-
-	// Mapping contacts
-	for _, contact := range createdCustomer.Contacts {
-		response.Contacts = append(response.Contacts, dto.ContactResponse{
-			Name:        contact.Name,
-			JobPosition: contact.JobPosition,
-			Email:       contact.Email,
-			Phone:       contact.Phone,
-			Active:      contact.Active,
-		})
-	}
-
-	// Mapping others
-	for _, other := range createdCustomer.Others {
-		var valueStr string
-		if other.Value != nil {
-			valueStr = *other.Value
-		}
-		response.Others = append(response.Others, dto.OtherResponse{
-			Key:    other.Key,
-			Value:  valueStr,
-			Active: other.Active,
-		})
-	}
-
-	c.JSON(http.StatusCreated, response)
+	c.JSON(http.StatusCreated, createdCustomer)
 }
 
 // @Summary Get customer by ID
@@ -500,14 +346,15 @@ func UploadCustomerLogo(c *gin.Context) {
 	})
 }
 
+
 // @Summary Upload customer logo small
-// @Description Upload a small logo/icon for customer (PNG, SVG, JPG)
+// @Description Upload a small logo for customer (supports .icon, .svg, .jpg, .png, .jpeg, .webp)
 // @Tags Customers
 // @Accept multipart/form-data
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "Customer ID"
-// @Param logo_small formData file true "Logo small file (PNG, SVG, JPG)"
+// @Param logo_small formData file true "Logo small file"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
@@ -531,16 +378,19 @@ func UploadCustomerLogoSmall(c *gin.Context) {
 		return
 	}
 
-	// Validate file extension
+	// Validate file extension - support .icon, .svg, .jpg, .png, .jpeg, .webp
 	ext := strings.ToLower(filepath.Ext(file.Filename))
-	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".svg" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Only JPG, PNG, and SVG files are allowed"})
-		return
+	allowedExts := []string{".icon", ".svg", ".jpg", ".jpeg", ".png", ".webp"}
+	isValidExt := false
+	for _, allowedExt := range allowedExts {
+		if ext == allowedExt {
+			isValidExt = true
+			break
+		}
 	}
 
-	// Validate file size (max 2MB for small logos)
-	if file.Size > 2*1024*1024 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "File size must be less than 2MB"})
+	if !isValidExt {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Only .icon, .svg, .jpg, .jpeg, .png, and .webp files are allowed"})
 		return
 	}
 
@@ -564,3 +414,223 @@ func UploadCustomerLogoSmall(c *gin.Context) {
 		"customer":        customer,
 	})
 }
+
+
+// @Summary Update block Customer status
+// @Description Update the status of a customer to Blocked
+// @Tags Customers
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Customer ID"
+// @Success 200 {object} dto.Customer
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Router /api/customers/status/{id} [post]
+func UpdateCustomerStatus(c *gin.Context) {
+
+	// Ambil user_id dari context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
+		return
+	}
+
+	uid, ok := userID.(uint)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID in token"})
+		return
+	}
+
+	id := c.Param("id")
+	status := c.PostForm("status")   // ambil status dari form
+	reason := c.PostForm("reason")   // alasan perubahan status
+	notes := c.PostForm("notes")     // catatan untuk dokumen
+
+	// Validasi status
+	if status != "active" && status != "blocked" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid status"})
+		return
+	}
+
+	// Cari customer
+	var customer entity.Customer
+	if err := config.DB.First(&customer, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
+		return
+	}
+
+	// Simpan reason ke StatusReasons
+	statusReason := entity.StatusReasons{
+		CustomerID: customer.ID,
+		Reason:     reason,
+		Status:     status,
+	}
+	config.DB.Create(&statusReason)
+
+	// Handle file upload
+	file, err := c.FormFile("file")
+	var document entity.Document
+	if err == nil { // kalau ada file
+		// Simpan file ke folder uploads/
+		filePath := fmt.Sprintf("uploads/documents/%d_%s", customer.ID, file.Filename)
+		if err := c.SaveUploadedFile(file, filePath); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload file"})
+			return
+		}
+
+		// Simpan record document
+		document = entity.Document{
+			CustomerID: customer.ID,
+			UserID:		uid,
+			Notes:      notes,
+			Type:       "StatusChange",
+			URLFile:    filePath,
+		}
+		config.DB.Create(&document)
+	}
+
+	// Response
+	c.JSON(http.StatusOK, gin.H{
+		"message":       "Customer status updated to " + status,
+		"customer":      customer,
+		"status_reason": statusReason,
+		"document":      document,
+	})
+}
+
+
+// @Summary Get Customer Status Reason And Document
+// @Description Get the status reason and document for a customer
+// @Tags Customers
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Customer ID"
+// @Success 200 {object} dto.CustomerStatusResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Router /api/customers/status/{id} [get]
+func GetCustomerStatus(c *gin.Context) {
+	id := c.Param("id")
+
+	// Cari customer
+	var customer entity.Customer
+	if err := config.DB.First(&customer, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
+		return
+	}
+
+	// Ambil status reasons
+	var statusReasons []entity.StatusReasons
+	if err := config.DB.Where("customer_id = ? AND is_active = ?", customer.ID, true).Find(&statusReasons).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch status reasons"})
+		return
+	}
+
+	// Ambil documents terkait status perubahan
+	var documents []entity.Document
+	if err := config.DB.Where("customer_id = ? AND is_active = ?", customer.ID, true).Find(&documents).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch documents"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":       "Success Get Customer status",
+		"customer":      customer,
+		"StatusReasons": statusReasons,
+		"document":      documents,
+	})
+}
+
+
+// @Summary Get customer statistics
+// @Description Get statistics about customers including total count, new customers in the last year, average cost, and blocked customers
+// @Tags Customers
+// @Param status query string false "Filter by status" Enums(Active, Inactive, Blocked)
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} dto.CustomerStatsResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/customers/stats [get]
+func GetCustomerStats(c *gin.Context) {
+	status := c.Query("status")
+
+	// Helper: apply filter & range tahun
+	queryWithFilter := func(base *gorm.DB, status string, start, end *time.Time) *gorm.DB {
+		q := base
+		if status != "" {
+			q = q.Where("status = ?", status)
+		}
+		if start != nil && end != nil {
+			q = q.Where("created_at BETWEEN ? AND ?", *start, *end)
+		}
+		return q
+	}
+
+	// Periode
+	now := time.Now()
+	thisYearStart := now.AddDate(-1, 0, 0) // 1 tahun ke belakang
+	lastYearStart := now.AddDate(-2, 0, 0) // 2 tahun ke belakang
+	lastYearEnd := now.AddDate(-1, 0, 0)
+
+	var totalThisYear, totalLastYear int64
+	queryWithFilter(config.DB.Model(&entity.Customer{}), status, &thisYearStart, &now).
+		Count(&totalThisYear)
+	queryWithFilter(config.DB.Model(&entity.Customer{}), status, &lastYearStart, &lastYearEnd).
+		Count(&totalLastYear)
+
+	var newThisYear, newLastYear int64
+	queryWithFilter(config.DB.Model(&entity.Customer{}), status, &thisYearStart, &now).
+		Count(&newThisYear)
+	queryWithFilter(config.DB.Model(&entity.Customer{}), status, &lastYearStart, &lastYearEnd).
+		Count(&newLastYear)
+
+	var avgThisYear, avgLastYear float64
+	queryWithFilter(config.DB.Model(&entity.Customer{}), status, &thisYearStart, &now).
+		Select("COALESCE(AVG(average_cost), 0)").Row().Scan(&avgThisYear)
+	queryWithFilter(config.DB.Model(&entity.Customer{}), status, &lastYearStart, &lastYearEnd).
+		Select("COALESCE(AVG(average_cost), 0)").Row().Scan(&avgLastYear)
+
+	var churnThisYear, churnLastYear int64
+	queryWithFilter(config.DB.Model(&entity.Customer{}), status, nil, nil).
+		Where("last_transaction_at < ?", thisYearStart).Count(&churnThisYear)
+	queryWithFilter(config.DB.Model(&entity.Customer{}), status, nil, nil).
+		Where("last_transaction_at BETWEEN ? AND ?", lastYearStart, lastYearEnd).Count(&churnLastYear)
+
+	calcGrowth := func(thisYear, lastYear float64) float64 {
+		if lastYear == 0 {
+			if thisYear > 0 {
+				return 100.0
+			}
+			return 0
+		}
+		return ((thisYear - lastYear) / lastYear) * 100
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Customer statistics fetched successfully",
+		"data": gin.H{
+			"total_customers": gin.H{
+				"value":  totalThisYear,
+				"growth": calcGrowth(float64(totalThisYear), float64(totalLastYear)),
+			},
+			"new_customers": gin.H{
+				"value":  newThisYear,
+				"growth": calcGrowth(float64(newThisYear), float64(newLastYear)),
+			},
+			"avg_revenue": gin.H{
+				"value":  avgThisYear,
+				"growth": calcGrowth(avgThisYear, avgLastYear),
+			},
+			"churn_customers": gin.H{
+				"value":  churnThisYear,
+				"growth": calcGrowth(float64(churnThisYear), float64(churnLastYear)),
+			},
+		},
+	})
+}
+
