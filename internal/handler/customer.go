@@ -4,13 +4,14 @@ import (
 	"customer-api/internal/config"
 	"customer-api/internal/dto"
 	"customer-api/internal/entity"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
-	"fmt"
-	"gorm.io/gorm"
+
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // @Summary Get all customers
@@ -117,7 +118,6 @@ func CreateCustomer(c *gin.Context) {
 			Name:    addrReq.Name,
 			Address: addrReq.Address,
 			Main:    addrReq.IsMain,
-			Active:  addrReq.Active,
 		}
 		if err := tx.Create(&address).Error; err != nil {
 			tx.Rollback()
@@ -130,10 +130,10 @@ func CreateCustomer(c *gin.Context) {
 	for _, socialReq := range req.Socials {
 		sosmed := entity.Sosmed{
 			CustomerID: customer.ID,
-			Name:       socialReq.Platform, // Atau buat field Name di DTO
-			Platform:   socialReq.Platform,
-			Handle:     socialReq.Handle,
-			Active:     socialReq.Active,
+			Name:       socialReq.Name, // Atau buat field Name di DTO
+			Address:    socialReq.Handle,
+
+			Active: socialReq.Active,
 		}
 		if err := tx.Create(&sosmed).Error; err != nil {
 			tx.Rollback()
@@ -152,7 +152,6 @@ func CreateCustomer(c *gin.Context) {
 			Phone:       contactReq.Phone,
 			Mobile:      contactReq.Mobile,
 			Main:        contactReq.IsMain,
-			Active:      contactReq.Active,
 		}
 
 		// Parse birthdate if provided
@@ -346,7 +345,6 @@ func UploadCustomerLogo(c *gin.Context) {
 	})
 }
 
-
 // @Summary Upload customer logo small
 // @Description Upload a small logo for customer (supports .icon, .svg, .jpg, .png, .jpeg, .webp)
 // @Tags Customers
@@ -415,7 +413,6 @@ func UploadCustomerLogoSmall(c *gin.Context) {
 	})
 }
 
-
 // @Summary Update block Customer status
 // @Description Update the status of a customer to Blocked
 // @Tags Customers
@@ -443,9 +440,9 @@ func UpdateCustomerStatus(c *gin.Context) {
 	}
 
 	id := c.Param("id")
-	status := c.PostForm("status")   // ambil status dari form
-	reason := c.PostForm("reason")   // alasan perubahan status
-	notes := c.PostForm("notes")     // catatan untuk dokumen
+	status := c.PostForm("status") // ambil status dari form
+	reason := c.PostForm("reason") // alasan perubahan status
+	notes := c.PostForm("notes")   // catatan untuk dokumen
 
 	// Validasi status
 	if status != "active" && status != "blocked" {
@@ -482,7 +479,7 @@ func UpdateCustomerStatus(c *gin.Context) {
 		// Simpan record document
 		document = entity.Document{
 			CustomerID: customer.ID,
-			UserID:		uid,
+			UserID:     uid,
 			Notes:      notes,
 			Type:       "StatusChange",
 			URLFile:    filePath,
@@ -498,7 +495,6 @@ func UpdateCustomerStatus(c *gin.Context) {
 		"document":      document,
 	})
 }
-
 
 // @Summary Get Customer Status Reason And Document
 // @Description Get the status reason and document for a customer
@@ -542,7 +538,6 @@ func GetCustomerStatus(c *gin.Context) {
 		"document":      documents,
 	})
 }
-
 
 // @Summary Get customer statistics
 // @Description Get statistics about customers including total count, new customers in the last year, average cost, and blocked customers
@@ -633,4 +628,3 @@ func GetCustomerStats(c *gin.Context) {
 		},
 	})
 }
-

@@ -106,15 +106,14 @@ type CreateAddressRequest struct {
 	Name       string `json:"name" binding:"required" example:"Head Office"`
 	Address    string `json:"address" binding:"required" example:"Jl. Sudirman No. 123, Jakarta Selatan"`
 	IsMain     bool   `json:"isMain" example:"true"`
-	Active     bool   `json:"active" example:"true"`
 }
 
 // CreateSocialRequest represents social media creation in customer request
 type CreateSocialRequest struct {
-	Name     string `json:"name" binding:"required" example:"Instagram"`
-	Platform string `json:"platform" binding:"required" example:"Instagram"`
-	Handle   string `json:"handle" binding:"required" example:"@digiinno_id"`
-	Active   bool   `json:"active" example:"true"`
+	Name    string `json:"name" binding:"required" example:"Instagram"`
+	Handle  string `json:"handle" binding:"required" example:"@digiinno_id"`
+	Address string `json:"address" example:"https://instagram.com/digiinno_id"` // Tambah field ini
+	Active  bool   `json:"active" example:"true"`
 }
 
 // CreateContactRequest represents contact creation in customer request

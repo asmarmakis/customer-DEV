@@ -58,7 +58,6 @@ func CreateAddress(c *gin.Context) {
 		Name:       req.Name,
 		Address:    req.Address,
 		Main:       req.IsMain,
-		Active:     req.Active,
 	}
 
 	result := config.DB.Create(&address)

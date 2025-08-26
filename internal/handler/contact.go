@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"net/http"
-	"time"
 	"customer-api/internal/config"
 	"customer-api/internal/dto"
 	"customer-api/internal/entity"
+	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -74,7 +74,6 @@ func CreateContact(c *gin.Context) {
 		Phone:       req.Phone,
 		Mobile:      req.Mobile,
 		Main:        req.IsMain,
-		Active:      req.Active,
 	}
 
 	result := config.DB.Create(&contact)
