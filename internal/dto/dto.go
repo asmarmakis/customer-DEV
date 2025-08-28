@@ -267,61 +267,62 @@ type ActivityCheckinRequest struct {
 }
 
 // Invoice DTOs
+type InvoiceResponse struct {
+	ID            string             `json:"id" example:"01HXYZ123456789ABCDEF"`
+	CustomerID    uint               `json:"customer_id" example:"1"`
+	ProjectID     string             `json:"project_id" example:"01HXYZ123456789ABCDEF"`
+	InvoiceNumber string             `json:"invoice_number" example:"INV-2024-001"`
+	Amount        float64            `json:"amount" example:"1000000"`
+	IssuedDate    time.Time          `json:"issued_date" example:"2024-01-15T00:00:00Z"`
+	DueDate       time.Time          `json:"due_date" example:"2024-02-15T00:00:00Z"`
+	PaidAmount    float64            `json:"paid_amount" example:"500000"`
+	Balance       float64            `json:"balance" example:"500000"`
+	Status        string             `json:"status" example:"partial"`
+	Customer      *CustomerResponse  `json:"customer,omitempty"`
+	CreatedAt     time.Time          `json:"created_at"`
+	UpdatedAt     time.Time          `json:"updated_at"`
+}
+
 type CreateInvoiceRequest struct {
-	CustomerID    uint      `json:"customer_id" binding:"required"`
-	ProjectID     string    `json:"project_id"`
-	InvoiceNumber string    `json:"invoice_number" binding:"required"`
-	Amount        float64   `json:"amount" binding:"required,gt=0"`
-	IssuedDate    time.Time `json:"issued_date" binding:"required"`
-	DueDate       time.Time `json:"due_date" binding:"required"`
-	PaidAmount    float64   `json:"paid_amount" binding:"gte=0"`
+	CustomerID    uint      `json:"customer_id" binding:"required" example:"1"`
+	ProjectID     string    `json:"project_id" example:"01HXYZ123456789ABCDEF"`
+	InvoiceNumber string    `json:"invoice_number" binding:"required" example:"INV-2024-001"`
+	Amount        float64   `json:"amount" binding:"required" example:"1000000"`
+	IssuedDate    time.Time `json:"issued_date" binding:"required" example:"2024-01-15T00:00:00Z"`
+	DueDate       time.Time `json:"due_date" binding:"required" example:"2024-02-15T00:00:00Z"`
 }
 
 type UpdateInvoiceRequest struct {
-	ProjectID     *string    `json:"project_id"`
-	InvoiceNumber *string    `json:"invoice_number"`
-	Amount        *float64   `json:"amount" binding:"omitempty,gt=0"`
-	IssuedDate    *time.Time `json:"issued_date"`
-	DueDate       *time.Time `json:"due_date"`
-	PaidAmount    *float64   `json:"paid_amount" binding:"omitempty,gte=0"`
-}
-
-type InvoiceResponse struct {
-	ID            string            `json:"id"`
-	CustomerID    uint              `json:"customer_id"`
-	ProjectID     string            `json:"project_id"`
-	InvoiceNumber string            `json:"invoice_number"`
-	Amount        float64           `json:"amount"`
-	IssuedDate    time.Time         `json:"issued_date"`
-	DueDate       time.Time         `json:"due_date"`
-	PaidAmount    float64           `json:"paid_amount"`
-	Balance       float64           `json:"balance"` // Amount - PaidAmount
-	Status        string            `json:"status"`  // Paid, Partial, Unpaid, Overdue
-	CreatedAt     time.Time         `json:"created_at"`
-	UpdatedAt     time.Time         `json:"updated_at"`
-	Customer      *CustomerResponse `json:"customer,omitempty"`
+	CustomerID    *uint      `json:"customer_id" example:"1"`
+	ProjectID     *string    `json:"project_id" example:"01HXYZ123456789ABCDEF"`
+	InvoiceNumber *string    `json:"invoice_number" example:"INV-2024-001"`
+	Amount        *float64   `json:"amount" example:"1000000"`
+	IssuedDate    *time.Time `json:"issued_date" example:"2024-01-15T00:00:00Z"`
+	DueDate       *time.Time `json:"due_date" example:"2024-02-15T00:00:00Z"`
+	PaidAmount    *float64   `json:"paid_amount" example:"500000"`
 }
 
 // Payment DTOs
+type PaymentResponse struct {
+	ID        string           `json:"id" example:"01HXYZ123456789ABCDEF"`
+	InvoiceID uint             `json:"invoice_id" example:"1"`
+	Amount    float64          `json:"amount" example:"500000"`
+	PaidAt    time.Time        `json:"paid_at" example:"2024-01-20T10:00:00Z"`
+	Invoice   *InvoiceResponse `json:"invoice,omitempty"`
+	CreatedAt time.Time        `json:"created_at"`
+	UpdatedAt time.Time        `json:"updated_at"`
+}
+
 type CreatePaymentRequest struct {
-	InvoiceID uint      `json:"invoice_id" binding:"required"`
-	Amount    float64   `json:"amount" binding:"required,gt=0"`
-	PaidAt    time.Time `json:"paid_at" binding:"required"`
+	InvoiceID uint      `json:"invoice_id" binding:"required" example:"1"`
+	Amount    float64   `json:"amount" binding:"required" example:"500000"`
+	PaidAt    time.Time `json:"paid_at" binding:"required" example:"2024-01-20T10:00:00Z"`
 }
 
 type UpdatePaymentRequest struct {
-	Amount *float64   `json:"amount" binding:"omitempty,gt=0"`
-	PaidAt *time.Time `json:"paid_at"`
-}
-
-type PaymentResponse struct {
-	ID        string           `json:"id"`
-	InvoiceID uint             `json:"invoice_id"`
-	Amount    float64          `json:"amount"`
-	PaidAt    time.Time        `json:"paid_at"`
-	CreatedAt time.Time        `json:"created_at"`
-	UpdatedAt time.Time        `json:"updated_at"`
-	Invoice   *InvoiceResponse `json:"invoice,omitempty"`
+	InvoiceID *uint      `json:"invoice_id" example:"1"`
+	Amount    *float64   `json:"amount" example:"500000"`
+	PaidAt    *time.Time `json:"paid_at" example:"2024-01-20T10:00:00Z"`
 }
 
 // Status DTOs
@@ -340,6 +341,21 @@ type StatusResponse struct {
 	UpdatedAt  time.Time `json:"updated_at"`
 }
 
+// AccountManager DTOs
+type AccountManagerResponse struct {
+	ID          string    `json:"id" example:"01HXYZ123456789ABCDEF"`
+	ManagerName string    `json:"manager_name" example:"John Doe"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type CreateAccountManagerRequest struct {
+	ManagerName string `json:"manager_name" binding:"required" example:"John Doe"`
+}
+
+type UpdateAccountManagerRequest struct {
+	ManagerName *string `json:"manager_name" example:"John Doe Updated"`
+}
 
 type Response struct {
 	Status  int         `json:"status"`

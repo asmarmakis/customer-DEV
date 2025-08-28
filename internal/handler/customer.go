@@ -55,7 +55,7 @@ func GetCustomers(c *gin.Context) {
 	config.DB.Model(&entity.Customer{}).Select("COALESCE(AVG(average_cost), 0)").Row().Scan(&avgCost)
 
 	var blockedCustomers int64
-	config.DB.Model(&entity.Customer{}).Where("status = ?", "Blocked").Count(&blockedCustomers)
+	config.DB.Model(&entity.Customer{}).Where("status = ?", "blocked").Count(&blockedCustomers)
 
 	c.JSON(http.StatusOK, gin.H{
 		"customers": customers,
@@ -86,6 +86,19 @@ func CreateCustomer(c *gin.Context) {
 		return
 	}
 
+	userIDInterface, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
+		return
+	}
+
+	// Type assertion ke string
+	userID, ok := userIDInterface.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID in context has invalid type"})
+		return
+	}
+
 	// Start transaction
 	tx := config.DB.Begin()
 	defer func() {
@@ -100,8 +113,8 @@ func CreateCustomer(c *gin.Context) {
 		Name:             *req.Name,
 		BrandName:        *req.BrandName,
 		Code:             *req.Code,
-		AccountManagerId: *req.AccountManagerId,
-		Status:           "Draft", // Changed from "Active" to "Draft"
+		AccountManagerid: *req.AccountManagerId,
+		Status:           "Active", // Default status
 	}
 
 	// Set logo if provided
@@ -250,21 +263,9 @@ func CreateCustomer(c *gin.Context) {
 		return
 	}
 
-	// Debug: Print customer ID to verify it's generated
-	fmt.Printf("DEBUG: Created customer ID: %s\n", customer.ID)
-
 	// Load customer with all relations for response
 	var createdCustomer entity.Customer
-	// Use a fresh DB connection instead of the committed transaction
-	query := config.DB.Preload("Addresses").Preload("Sosmeds").Preload("Contacts").Preload("Structures").Preload("Groups").Preload("Others")
-	if err := query.Where("id = ?", customer.ID).First(&createdCustomer).Error; err != nil {
-		fmt.Printf("DEBUG: Failed to load customer with ID %s: %v\n", customer.ID, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load created customer: " + err.Error()})
-		return
-	}
-
-	// Debug: Print loaded customer data
-	fmt.Printf("DEBUG: Loaded customer: ID=%s, Name=%s, Code=%s\n", createdCustomer.ID, createdCustomer.Name, createdCustomer.Code)
+	config.DB.Preload("Addresses").Preload("Sosmeds").Preload("Contacts").Preload("Structures").Preload("Groups").Preload("Others").First(&createdCustomer, customer.ID)
 
 	// Mapping manual untuk response
 	response := dto.CustomerResponse{
@@ -272,7 +273,7 @@ func CreateCustomer(c *gin.Context) {
 		Name:             createdCustomer.Name,
 		BrandName:        createdCustomer.BrandName,
 		Code:             createdCustomer.Code,
-		AccountManagerId: createdCustomer.AccountManagerId,
+		AccountManagerId: createdCustomer.AccountManagerid,
 		Logo:             createdCustomer.Logo,
 		LogoSmall:        createdCustomer.LogoSmall,
 		Status:           createdCustomer.Status,
@@ -317,6 +318,15 @@ func CreateCustomer(c *gin.Context) {
 		})
 	}
 
+	// Insert HistoryCustomer
+	history := entity.HistoryCustomer{
+		CustomerID: customer.ID,
+		UserID:     userID,
+		Status:     "Created",
+		Notes:      "Created new customer",
+	}
+	config.DB.Create(&history)
+
 	c.JSON(http.StatusCreated, response)
 }
 
@@ -335,7 +345,7 @@ func GetCustomer(c *gin.Context) {
 	id := c.Param("id")
 
 	var customer entity.Customer
-	result := config.DB.Where("id = ?", id).First(&customer)
+	result := config.DB.First(&customer, id)
 	if result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
 		return
@@ -346,9 +356,22 @@ func GetCustomer(c *gin.Context) {
 
 func UpdateCustomer(c *gin.Context) {
 	id := c.Param("id")
+	userIDInterface, exists := c.Get("user_id")
+
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
+		return
+	}
+
+	// Type assertion ke string
+	userID, ok := userIDInterface.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID in context has invalid type"})
+		return
+	}
 
 	var customer entity.Customer
-	result := config.DB.Where("id = ?", id).First(&customer)
+	result := config.DB.First(&customer, id)
 	if result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
 		return
@@ -360,26 +383,71 @@ func UpdateCustomer(c *gin.Context) {
 	}
 
 	config.DB.Save(&customer)
+
+	// Insert HistoryCustomer
+	history := entity.HistoryCustomer{
+		CustomerID: customer.ID,
+		UserID:     userID,
+		Status:     "Updated",
+		Notes:      "Updated customer",
+	}
+	config.DB.Create(&history)
+
 	c.JSON(http.StatusOK, customer)
 }
 
 func DeleteCustomer(c *gin.Context) {
 	id := c.Param("id")
 
-	var customer entity.Customer
-	result := config.DB.Where("id = ?", id).First(&customer)
-	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
+	userIDInterface, exists := c.Get("user_id")
+
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
 		return
 	}
 
-	config.DB.Delete(&customer)
+	// Type assertion ke string
+	userID, ok := userIDInterface.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID in context has invalid type"})
+		return
+	}
+
+	result := config.DB.Delete(&entity.Customer{}, id)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete customer"})
+		return
+	}
+
+	// Insert HistoryCustomer
+	history := entity.HistoryCustomer{
+		CustomerID: id,
+		UserID:     userID,
+		Status:     "Deleted",
+		Notes:      "Deleted customer",
+	}
+
+	config.DB.Create(&history)
+
 	c.JSON(http.StatusOK, gin.H{"message": "Customer deleted successfully"})
 }
 
 func UploadCustomerLogo(c *gin.Context) {
 	id := c.Param("id")
 
+	userIDInterface, exists := c.Get("user_id")
+
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
+		return
+	}
+
+	// Type assertion ke string
+	userID, ok := userIDInterface.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID in context has invalid type"})
+		return
+	}
 	// Check if customer exists
 	var customer entity.Customer
 	result := config.DB.First(&customer, id)
@@ -416,6 +484,15 @@ func UploadCustomerLogo(c *gin.Context) {
 	customer.Logo = logoPath
 	config.DB.Save(&customer)
 
+	// Insert HistoryCustomer
+	history := entity.HistoryCustomer{
+		CustomerID: customer.ID,
+		UserID:     userID,
+		Status:     "Logo Uploaded",
+		Notes:      "Uploaded logo for customer",
+	}
+	config.DB.Create(&history)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message":   "Logo uploaded successfully",
 		"logo_path": logoPath,
@@ -436,16 +513,16 @@ func UploadCustomerLogo(c *gin.Context) {
 // @Router /api/customers/status/{id} [post]
 func UpdateCustomerStatus(c *gin.Context) {
 
-	// Ambil user_id dari context
-	userID, exists := c.Get("user_id")
+	userIDInterface, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
 		return
 	}
 
-	uid, ok := userID.(string)
+	// Type assertion ke string
+	userID, ok := userIDInterface.(string)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID in token"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID in context has invalid type"})
 		return
 	}
 
@@ -493,13 +570,22 @@ func UpdateCustomerStatus(c *gin.Context) {
 		// Simpan record document
 		document = entity.Document{
 			CustomerID: customer.ID,
-			UserID:     uid,
+			UserID:     userID,
 			Notes:      notes,
 			Type:       "StatusChange",
 			URLFile:    filePath,
 		}
 		config.DB.Create(&document)
 	}
+
+	// Insert HistoryCustomer
+	history := entity.HistoryCustomer{
+		CustomerID: customer.ID,
+		UserID:     userID,
+		Status:     "Status Changed",
+		Notes:      "Changed status to " + status,
+	}
+	config.DB.Create(&history)
 
 	// Response
 	c.JSON(http.StatusOK, gin.H{
@@ -526,7 +612,7 @@ func GetCustomerStatus(c *gin.Context) {
 
 	// Cari customer
 	var customer entity.Customer
-	if err := config.DB.Where("id = ?", id).First(&customer).Error; err != nil {
+	if err := config.DB.First(&customer, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
 		return
 	}
@@ -757,4 +843,29 @@ func sendFile(c *gin.Context, data []byte, filename, contentType string) {
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Expires", "0")
 	c.Writer.Write(data)
+}
+
+// get historyCustomer by UserID
+func getHistoryCustomerByUserID(userID string) ([]entity.HistoryCustomer, error) {
+	var history []entity.HistoryCustomer
+	if err := config.DB.Where("user_id = ?", userID).Find(&history).Error; err != nil {
+		return nil, err
+	}
+	return history, nil
+}
+// ... existing code ...
+// GetHistoryCustomerByUserID gets history customer by user ID
+func GetHistoryCustomerByUserID(c *gin.Context) {
+	userID := c.Param("id")
+	
+	var history []entity.HistoryCustomer
+	if err := config.DB.Where("user_id = ?", userID).Find(&history).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil history customer"})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{
+		"message": "History customer berhasil diambil",
+		"data":    history,
+	})
 }

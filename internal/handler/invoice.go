@@ -95,7 +95,7 @@ func CreateInvoice(c *gin.Context) {
 		Amount:        req.Amount,
 		IssuedDate:    req.IssuedDate,
 		DueDate:       req.DueDate,
-		PaidAmount:    req.PaidAmount,
+		PaidAmount:    0, // Initialize PaidAmount to 0 for new invoices
 	}
 
 	if err := db.Create(&invoice).Error; err != nil {

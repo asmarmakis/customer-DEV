@@ -253,7 +253,7 @@ func GetCustomerWithAllRelations(c *gin.Context) {
 		Preload("Structures", func(db *gorm.DB) *gorm.DB {
 			return db.Order("level ASC, name ASC")
 		}).
-		Where("id = ?", id).First(&customer)
+		First(&customer, id)
 	if result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
 		return

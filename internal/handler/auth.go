@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type LoginInput struct {
@@ -57,28 +58,28 @@ func Login(c *gin.Context) {
 	} else {
 		usernameOrEmail = input.Email
 	}
+	
 
-	// Cari user berdasarkan username atau email
-	db := config.DB
-	if input.Username != "" {
-		if err := db.Where("username = ?", usernameOrEmail).First(&user).Error; err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+	// Cek apakah username/email terdaftar
+	result := config.DB.Where("username = ? OR email = ?", usernameOrEmail, usernameOrEmail).First(&user)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			// Username atau email tidak ditemukan
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Username atau email tidak terdaftar"})
 			return
 		}
-	} else {
-		if err := db.Where("email = ?", usernameOrEmail).First(&user).Error; err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
-			return
-		}
-	}
-
-	// Verifikasi password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		// Error database lainnya
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Terjadi kesalahan saat login"})
 		return
 	}
 
-	// Generate JWT token
+	// Cek password
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Password salah"})
+		return
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.ID,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(),
@@ -86,7 +87,7 @@ func Login(c *gin.Context) {
 
 	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
 
@@ -96,7 +97,6 @@ func Login(c *gin.Context) {
 			"id":       user.ID,
 			"username": user.Username,
 			"email":    user.Email,
-			"role_id":  user.RoleID,
 		},
 	})
 }

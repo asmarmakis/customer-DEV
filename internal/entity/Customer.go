@@ -15,7 +15,11 @@ type Customer struct {
 	Name             string         `json:"name" gorm:"not null"`
 	BrandName        string         `json:"brand_name"`
 	Code             string         `json:"code" gorm:"unique"`
-	AccountManagerId string         `json:"account_manager_id"`
+	AccountManagerid string         `json:"account_manager"`
+	Email            string         `json:"email"`
+	Phone            string         `json:"phone"`
+	Website          string         `json:"website"`
+	Description      string         `json:"description"`
 	Logo             string         `json:"logo"`
 	Status           string         `json:"status" gorm:"default:'Active'"` // Status internal
 	Category         string         `json:"category"`

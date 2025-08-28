@@ -20,6 +20,7 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// Register all modules
 	route.RegisterRoleRoutes(protected)
+	route.RegisterAccountManagerRoutes(protected)
 	route.RegisterCustomerRoutes(protected)
 	route.RegisterAddressRoutes(protected)
 	route.RegisterSosmedRoutes(protected)
