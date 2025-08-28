@@ -853,17 +853,18 @@ func getHistoryCustomerByUserID(userID string) ([]entity.HistoryCustomer, error)
 	}
 	return history, nil
 }
+
 // ... existing code ...
 // GetHistoryCustomerByUserID gets history customer by user ID
 func GetHistoryCustomerByUserID(c *gin.Context) {
 	userID := c.Param("id")
-	
+
 	var history []entity.HistoryCustomer
 	if err := config.DB.Where("user_id = ?", userID).Find(&history).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil history customer"})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "History customer berhasil diambil",
 		"data":    history,
