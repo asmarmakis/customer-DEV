@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"customer-api/internal/entity"
 
@@ -43,36 +44,77 @@ func ConnectDatabase() {
 
 	fmt.Println("Starting auto migration...")
 
-	// HAPUS SEMUA BARIS DropTable BERIKUT INI:
-	// DB.Migrator().DropTable(&entity.ActivityCheckin{})
-	// DB.Migrator().DropTable(&entity.ActivityAttendee{})
-	// DB.Migrator().DropTable(&entity.Activity{})
-	// DB.Migrator().DropTable(&entity.User{})
-	// ... dst (semua sudah dikomentari dengan benar)
-	// DB.Migrator().DropTable(&entity.Address{})
-	// DB.Migrator().DropTable(&entity.Sosmed{})
-	// DB.Migrator().DropTable(&entity.Contact{})
-	// DB.Migrator().DropTable(&entity.Structure{})
-	// DB.Migrator().DropTable(&entity.Other{})
-	// DB.Migrator().DropTable(&entity.Customer{})
-	// DB.Migrator().DropTable(&entity.Role{})
+
+	isProd, _ := strconv.ParseBool(os.Getenv("IS_PRODUCTION"))
+	// Drop semua tabel yang bermasalah untuk memastikan skema bersih
+	// Drop tabel dengan foreign key terlebih dahulu
+	if !isProd {
+    tables := []interface{}{
+        &entity.Activity{},
+		&entity.ActivityAttendee{},
+		&entity.ActivityCheckin{},
+		&entity.ActivityType{},
+		&entity.Address{},
+		&entity.Contact{},
+		&entity.Customer{},
+		&entity.Document{},
+		&entity.Event{},
+		&entity.EventAttendee{},
+		&entity.Group{},
+		&entity.Invoice{},
+		&entity.Other{},
+		&entity.Payment{},
+		&entity.Project{},
+		&entity.Role{},
+		&entity.Sosmed{},
+		&entity.Status{},
+		&entity.StatusReasons{},
+		&entity.Structure{},
+		&entity.User{},
+		&entity.Stages{},
+		&entity.StagesDetail{},
+		&entity.Workflows{},
+		&entity.WorkflowsDetail{},
+		&entity.GroupConfig{},
+		&entity.GroupConfigDetail{},
+		
+    }
+    for _, t := range tables {
+        _ = DB.Migrator().DropTable(t)
+    }
+}
+
 
 	// Auto migrate the schema - akan membuat tabel sesuai model Go
 	err = DB.AutoMigrate(
-		&entity.Role{},
-		&entity.User{},
-		&entity.Customer{},
-		&entity.Address{},
-		&entity.Sosmed{},
-		&entity.Contact{},
-		&entity.Structure{},
-		&entity.Group{},
-		&entity.Other{},
 		&entity.Activity{},
-		&entity.ActivityCheckin{},
 		&entity.ActivityAttendee{},
-
+		&entity.ActivityCheckin{},
+		&entity.ActivityType{},
+		&entity.Address{},
+		&entity.Contact{},
+		&entity.Customer{},
+		&entity.Document{},
+		&entity.Event{},
+		&entity.EventAttendee{},
+		&entity.Group{},
+		&entity.Invoice{},
+		&entity.Other{},
+		&entity.Payment{},
+		&entity.Project{},
+		&entity.Role{},
+		&entity.Sosmed{},
 		&entity.Status{},
+		&entity.StatusReasons{},
+		&entity.Structure{},
+		&entity.User{},
+		&entity.Stages{},
+		&entity.StagesDetail{},
+		&entity.Workflows{},
+		&entity.WorkflowsDetail{},
+		&entity.GroupConfig{},
+		&entity.GroupConfigDetail{},
+		
 	)
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)

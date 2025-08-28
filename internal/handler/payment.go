@@ -280,7 +280,7 @@ func convertToPaymentResponse(payment entity.Payment) dto.PaymentResponse {
 	}
 
 	// Add invoice if loaded
-	if payment.Invoice.ID != 0 {
+	if payment.Invoice.ID != "" {
 		invoiceResponse := &dto.InvoiceResponse{
 			ID:            payment.Invoice.ID,
 			CustomerID:    payment.Invoice.CustomerID,

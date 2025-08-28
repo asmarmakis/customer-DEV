@@ -11,7 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 type LoginInput struct {
@@ -24,7 +23,7 @@ type RegisterInput struct {
 	Username string `json:"username" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
-	RoleID   uint   `json:"role_id"` // Tambahkan field role_id (optional)
+	RoleID   string   `json:"role_id"` // Tambahkan field role_id (optional)
 }
 
 // @Summary User login
@@ -59,26 +58,27 @@ func Login(c *gin.Context) {
 		usernameOrEmail = input.Email
 	}
 
-	// Cek apakah username/email terdaftar
-	result := config.DB.Where("username = ? OR email = ?", usernameOrEmail, usernameOrEmail).First(&user)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			// Username atau email tidak ditemukan
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Username atau email tidak terdaftar"})
+	// Cari user berdasarkan username atau email
+	db := config.DB
+	if input.Username != "" {
+		if err := db.Where("username = ?", usernameOrEmail).First(&user).Error; err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 			return
 		}
-		// Error database lainnya
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Terjadi kesalahan saat login"})
+	} else {
+		if err := db.Where("email = ?", usernameOrEmail).First(&user).Error; err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+			return
+		}
+	}
+
+	// Verifikasi password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
-	// Cek password
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password))
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Password salah"})
-		return
-	}
-
+	// Generate JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.ID,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(),
@@ -86,7 +86,7 @@ func Login(c *gin.Context) {
 
 	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate token"})
 		return
 	}
 
@@ -96,6 +96,7 @@ func Login(c *gin.Context) {
 			"id":       user.ID,
 			"username": user.Username,
 			"email":    user.Email,
+			"role_id":  user.RoleID,
 		},
 	})
 }
@@ -130,6 +131,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
@@ -138,31 +140,32 @@ func Register(c *gin.Context) {
 
 	// Set default role_id jika tidak disediakan
 	roleID := input.RoleID
-	if roleID == 0 {
+	if roleID == "" { // ✅ string kosong, bukan 0
 		// Cari role "User" dari database
 		var userRole entity.Role
-		if err := config.DB.Where("role_name = ?", "User").First(&userRole).Error; err != nil {
+		if err := config.DB.Where("name = ?", "User").First(&userRole).Error; err != nil {
 			// Jika role User tidak ditemukan, gunakan role pertama yang ada
 			if err := config.DB.First(&userRole).Error; err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Tidak ada role yang tersedia"})
 				return
 			}
 		}
-		roleID = userRole.ID
+		roleID = userRole.ID // ✅ sekarang string, bukan uint
 	} else {
 		// Validasi bahwa role_id yang diberikan ada di database
 		var role entity.Role
-		if err := config.DB.First(&role, roleID).Error; err != nil {
+		if err := config.DB.Where("id = ?", roleID).First(&role).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Role ID tidak valid"})
 			return
 		}
 	}
 
+	// Buat user baru
 	user := entity.User{
 		Username: input.Username,
 		Email:    input.Email,
 		Password: string(hashedPassword),
-		RoleID:   roleID,
+		RoleID:   roleID, // ✅ string ULID
 	}
 
 	result := config.DB.Create(&user)
@@ -173,3 +176,4 @@ func Register(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{"message": "User berhasil didaftarkan"})
 }
+

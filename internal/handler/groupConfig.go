@@ -2,11 +2,11 @@ package handler
 
 import (
 	"net/http"
-	"time"          // Tambahkan ini
 	"customer-api/internal/config"
 	"customer-api/internal/entity"
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"  // Tambahkan ini
+	"time"
+	"gorm.io/gorm"
 )
 
 
@@ -33,8 +33,7 @@ type GroupConfigDetail struct {
 }
 
 
-// Ubah nama fungsi sesuai dengan yang dipanggil di routes
-func CreateGroupConfig(c *gin.Context) {
+func CreateConfigGroup(c *gin.Context) {
 	var input entity.GroupConfig
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -77,7 +76,7 @@ func CreateGroupConfig(c *gin.Context) {
 }
 
 
-func GetGroupConfigs(c *gin.Context) {
+func GetConfigGroups(c *gin.Context) {
 	var groups []entity.GroupConfig
 	if result := config.DB.Find(&groups); result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data config groups"})
@@ -91,7 +90,7 @@ func GetGroupConfigs(c *gin.Context) {
 	})
 }
 
-func GetGroupConfig(c *gin.Context) {
+func GetConfigGroup(c *gin.Context) {
 	id := c.Param("id")
 	var group entity.GroupConfig
 	if result := config.DB.Where("id = ?", id).First(&group); result.Error != nil {
@@ -105,7 +104,7 @@ func GetGroupConfig(c *gin.Context) {
 	})
 }
 
-func UpdateGroupConfig(c *gin.Context) {
+func UpdateConfigGroup(c *gin.Context) {
 	id := c.Param("id")
 	var input entity.GroupConfig
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -142,7 +141,7 @@ func UpdateGroupConfig(c *gin.Context) {
 	})
 }
 
-func DeleteGroupConfig(c *gin.Context) {
+func DeleteConfigGroup(c *gin.Context) {
 	id := c.Param("id")
 	var group entity.GroupConfig
 	if result := config.DB.Where("id = ?", id).First(&group); result.Error != nil {
@@ -165,7 +164,7 @@ func DeleteGroupConfig(c *gin.Context) {
 	})
 }
 
-func CreateGroupConfigDetail(c *gin.Context) {
+func CreateConfigGroupDetail(c *gin.Context) {
 	var input entity.GroupConfigDetail
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -199,7 +198,7 @@ func CreateGroupConfigDetail(c *gin.Context) {
 	})
 }
 
-func GetGroupConfigDetails(c *gin.Context) {
+func GetConfigGroupDetails(c *gin.Context) {
 	var details []entity.GroupConfigDetail
 	if result := config.DB.Find(&details); result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data config group details"})
@@ -214,7 +213,7 @@ func GetGroupConfigDetails(c *gin.Context) {
 	})
 }
 
-func GetGroupConfigDetail(c *gin.Context) {
+func GetConfigGroupDetail(c *gin.Context) {
 	id := c.Param("id")
 	var detail entity.GroupConfigDetail
 	if result := config.DB.Where("id = ?", id).First(&detail); result.Error != nil {
@@ -228,7 +227,7 @@ func GetGroupConfigDetail(c *gin.Context) {
 	})
 }
 
-func UpdateGroupConfigDetail(c *gin.Context) {
+func UpdateConfigGroupDetail(c *gin.Context) {
 	id := c.Param("id")
 	var input entity.GroupConfigDetail
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -265,7 +264,7 @@ func UpdateGroupConfigDetail(c *gin.Context) {
 	})
 }
 
-func DeleteGroupConfigDetail(c *gin.Context) {
+func DeleteConfigGroupDetail(c *gin.Context) {
 	id := c.Param("id")
 	var detail entity.GroupConfigDetail
 	if result := config.DB.Where("id = ?", id).First(&detail); result.Error != nil {

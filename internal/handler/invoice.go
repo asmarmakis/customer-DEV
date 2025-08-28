@@ -233,7 +233,7 @@ func convertToInvoiceResponse(invoice entity.Invoice) dto.InvoiceResponse {
 	}
 
 	// Add customer if loaded
-	if invoice.Customer.ID != 0 {
+	if invoice.Customer.ID != "" {
 		customerResponse := &dto.CustomerResponse{
 			ID:   invoice.Customer.ID,
 			Name: invoice.Customer.Name,

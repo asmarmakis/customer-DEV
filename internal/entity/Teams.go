@@ -7,6 +7,10 @@ import (
 	"gorm.io/gorm"
 )
 
+
+// Customer entity
+
+
 type Teams struct {
 	ID        string         `json:"id" gorm:"primaryKey;size:26"`
 	Name      string         `json:"name" gorm:"not null;unique"`
@@ -18,9 +22,10 @@ type Teams struct {
 	IsActive  bool           `json:"is_active" gorm:"default:true"`
 
 	// relationships
-	TeamLeadUser User       `json:"-" gorm:"foreignKey:TeamLead;references:ID"`
-	Customers    []Customer `json:"-" gorm:"foreignKey:TeamID"`
+	TeamLeadUser User       `json:"team_lead_user" gorm:"foreignKey:TeamLead;references:ID"`
+	Customers    []Customer `json:"customers" gorm:"foreignKey:TeamID"`
 }
+
 
 // before save generate id
 func (s *Teams) BeforeCreate(tx *gorm.DB) (err error) {

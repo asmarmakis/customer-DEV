@@ -2,13 +2,13 @@ package entity
 
 import (
 	"time"
-
+	"crypto/rand"
+	"github.com/oklog/ulid/v2"
 	"gorm.io/gorm"
 )
-
 // ActivityCheckin model - tabel untuk check-in aktivitas
 type ActivityCheckin struct {
-	ID          uint           `json:"id" gorm:"primaryKey"`
+	ID		string         		`json:"id" gorm:"primaryKey;size:26"`
 	ActivityID  uint           `json:"activity_id" gorm:"not null"`
 	UserID      uint           `json:"user_id" gorm:"not null"`
 	CheckedInAt time.Time      `json:"checked_in_at" gorm:"not null"`
@@ -19,4 +19,13 @@ type ActivityCheckin struct {
 	// Relations
 	Activity Activity `json:"-" gorm:"foreignKey:ActivityID"`
 	User     User     `json:"user,omitempty" gorm:"foreignKey:UserID"`
+}
+
+func (c *ActivityCheckin) BeforeCreate(tx *gorm.DB) error {
+	id, err := ulid.New(ulid.Timestamp(time.Now()), rand.Reader)
+	if err != nil {
+		return err
+	}
+	c.ID = id.String()
+	return nil
 }

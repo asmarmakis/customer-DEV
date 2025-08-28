@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"customer-api/internal/config"
 	"customer-api/internal/dto"
 	"customer-api/internal/entity"
@@ -11,7 +12,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jung-kurt/gofpdf"
+	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
+	// "strconv"
 )
 
 // @Summary Get all customers
@@ -90,17 +94,24 @@ func CreateCustomer(c *gin.Context) {
 		}
 	}()
 
-	// Create customer
+	// Di dalam fungsi CreateCustomer, tambahkan setelah Logo assignment:
+	// Create customer entity
 	customer := entity.Customer{
-		Name:             req.Name,
-		BrandName:        req.BrandName,
-		Code:             req.Code,
-		AccountManagerId: req.AccountManagerId,
-		Status:           req.StatusName, // Gunakan req.StatusName dari request body
+		Name:             *req.Name,
+		BrandName:        *req.BrandName,
+		Code:             *req.Code,
+		AccountManagerId: *req.AccountManagerId,
+		Status:           "Draft", // Changed from "Active" to "Draft"
 	}
 
-	if req.Logo != nil {
-		customer.Logo = *req.Logo
+	// Set logo if provided
+	if req.Logo != "" {
+		customer.Logo = req.Logo
+	}
+
+	// Set logo_small if provided
+	if req.LogoSmall != "" {
+		customer.LogoSmall = req.LogoSmall
 	}
 
 	if err := tx.Create(&customer).Error; err != nil {
@@ -118,6 +129,7 @@ func CreateCustomer(c *gin.Context) {
 			Name:    addrReq.Name,
 			Address: addrReq.Address,
 			Main:    addrReq.IsMain,
+			Active:  addrReq.Active,
 		}
 		if err := tx.Create(&address).Error; err != nil {
 			tx.Rollback()
@@ -130,10 +142,10 @@ func CreateCustomer(c *gin.Context) {
 	for _, socialReq := range req.Socials {
 		sosmed := entity.Sosmed{
 			CustomerID: customer.ID,
-			Name:       socialReq.Name, // Atau buat field Name di DTO
-			Address:    socialReq.Handle,
-
-			Active: socialReq.Active,
+			Name:       socialReq.Platform, // Atau buat field Name di DTO
+			Platform:   socialReq.Platform,
+			Handle:     socialReq.Handle,
+			Active:     socialReq.Active,
 		}
 		if err := tx.Create(&sosmed).Error; err != nil {
 			tx.Rollback()
@@ -152,6 +164,7 @@ func CreateCustomer(c *gin.Context) {
 			Phone:       contactReq.Phone,
 			Mobile:      contactReq.Mobile,
 			Main:        contactReq.IsMain,
+			Active:      contactReq.Active,
 		}
 
 		// Parse birthdate if provided
@@ -169,7 +182,7 @@ func CreateCustomer(c *gin.Context) {
 	}
 
 	// Create structures with hierarchy
-	tempKeyMap := make(map[string]uint)
+	tempKeyMap := make(map[string]string)
 	for _, structReq := range req.Structures {
 		structure := entity.Structure{
 			CustomerID: customer.ID,
@@ -213,23 +226,23 @@ func CreateCustomer(c *gin.Context) {
 
 	// Handle groups (industry and parent group)
 	// Note: This assumes groups already exist in the database
-	for _, group := range req.Groups {
-		if group.IndustryID != "" && group.IndustryActive {
-			// Find industry group and associate
-			var industryGroup entity.Group
-			if err := tx.Where("id = ?", group.IndustryID).First(&industryGroup).Error; err == nil {
-				tx.Model(&customer).Association("Groups").Append(&industryGroup)
-			}
-		}
-
-		if group.ParentGroupID != "" && group.ParentGroupActive {
-			// Find parent group and associate
-			var parentGroup entity.Group
-			if err := tx.Where("id = ?", group.ParentGroupID).First(&parentGroup).Error; err == nil {
-				tx.Model(&customer).Association("Groups").Append(&parentGroup)
-			}
+	// Hapus: for _, group := range req.Groups {
+	if req.Groups.IndustryID != "" && req.Groups.IndustryActive {
+		// Find industry group and associate
+		var industryGroup entity.Group
+		if err := tx.Where("id = ?", req.Groups.IndustryID).First(&industryGroup).Error; err == nil {
+			tx.Model(&customer).Association("Groups").Append(&industryGroup)
 		}
 	}
+
+	if req.Groups.ParentGroupID != "" && req.Groups.ParentGroupActive {
+		// Find parent group and associate
+		var parentGroup entity.Group
+		if err := tx.Where("id = ?", req.Groups.ParentGroupID).First(&parentGroup).Error; err == nil {
+			tx.Model(&customer).Association("Groups").Append(&parentGroup)
+		}
+	}
+	// Hapus: }
 
 	// Commit transaction
 	if err := tx.Commit().Error; err != nil {
@@ -237,11 +250,74 @@ func CreateCustomer(c *gin.Context) {
 		return
 	}
 
+	// Debug: Print customer ID to verify it's generated
+	fmt.Printf("DEBUG: Created customer ID: %s\n", customer.ID)
+
 	// Load customer with all relations for response
 	var createdCustomer entity.Customer
-	config.DB.Preload("Addresses").Preload("Sosmeds").Preload("Contacts").Preload("Structures").Preload("Groups").Preload("Others").First(&createdCustomer, customer.ID)
+	// Use a fresh DB connection instead of the committed transaction
+	query := config.DB.Preload("Addresses").Preload("Sosmeds").Preload("Contacts").Preload("Structures").Preload("Groups").Preload("Others")
+	if err := query.Where("id = ?", customer.ID).First(&createdCustomer).Error; err != nil {
+		fmt.Printf("DEBUG: Failed to load customer with ID %s: %v\n", customer.ID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load created customer: " + err.Error()})
+		return
+	}
 
-	c.JSON(http.StatusCreated, createdCustomer)
+	// Debug: Print loaded customer data
+	fmt.Printf("DEBUG: Loaded customer: ID=%s, Name=%s, Code=%s\n", createdCustomer.ID, createdCustomer.Name, createdCustomer.Code)
+
+	// Mapping manual untuk response
+	response := dto.CustomerResponse{
+		ID:               createdCustomer.ID,
+		Name:             createdCustomer.Name,
+		BrandName:        createdCustomer.BrandName,
+		Code:             createdCustomer.Code,
+		AccountManagerId: createdCustomer.AccountManagerId,
+		Logo:             createdCustomer.Logo,
+		LogoSmall:        createdCustomer.LogoSmall,
+		Status:           createdCustomer.Status,
+		Category:         createdCustomer.Category,
+		Rating:           createdCustomer.Rating,
+		AverageCost:      createdCustomer.AverageCost,
+		CreatedAt:        createdCustomer.CreatedAt,
+		UpdatedAt:        createdCustomer.UpdatedAt,
+	}
+
+	// Mapping addresses
+	for _, addr := range createdCustomer.Addresses {
+		response.Addresses = append(response.Addresses, dto.AddressResponse{
+			Name:    addr.Name,
+			Address: addr.Address,
+			IsMain:  addr.Main,
+			Active:  addr.Active,
+		})
+	}
+
+	// Mapping contacts
+	for _, contact := range createdCustomer.Contacts {
+		response.Contacts = append(response.Contacts, dto.ContactResponse{
+			Name:        contact.Name,
+			JobPosition: contact.JobPosition,
+			Email:       contact.Email,
+			Phone:       contact.Phone,
+			Active:      contact.Active,
+		})
+	}
+
+	// Mapping others
+	for _, other := range createdCustomer.Others {
+		var valueStr string
+		if other.Value != nil {
+			valueStr = *other.Value
+		}
+		response.Others = append(response.Others, dto.OtherResponse{
+			Key:    other.Key,
+			Value:  valueStr,
+			Active: other.Active,
+		})
+	}
+
+	c.JSON(http.StatusCreated, response)
 }
 
 // @Summary Get customer by ID
@@ -259,7 +335,7 @@ func GetCustomer(c *gin.Context) {
 	id := c.Param("id")
 
 	var customer entity.Customer
-	result := config.DB.First(&customer, id)
+	result := config.DB.Where("id = ?", id).First(&customer)
 	if result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
 		return
@@ -272,7 +348,7 @@ func UpdateCustomer(c *gin.Context) {
 	id := c.Param("id")
 
 	var customer entity.Customer
-	result := config.DB.First(&customer, id)
+	result := config.DB.Where("id = ?", id).First(&customer)
 	if result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
 		return
@@ -290,12 +366,14 @@ func UpdateCustomer(c *gin.Context) {
 func DeleteCustomer(c *gin.Context) {
 	id := c.Param("id")
 
-	result := config.DB.Delete(&entity.Customer{}, id)
+	var customer entity.Customer
+	result := config.DB.Where("id = ?", id).First(&customer)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete customer"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
 		return
 	}
 
+	config.DB.Delete(&customer)
 	c.JSON(http.StatusOK, gin.H{"message": "Customer deleted successfully"})
 }
 
@@ -345,74 +423,6 @@ func UploadCustomerLogo(c *gin.Context) {
 	})
 }
 
-// @Summary Upload customer logo small
-// @Description Upload a small logo for customer (supports .icon, .svg, .jpg, .png, .jpeg, .webp)
-// @Tags Customers
-// @Accept multipart/form-data
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "Customer ID"
-// @Param logo_small formData file true "Logo small file"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} dto.ErrorResponse
-// @Failure 404 {object} dto.ErrorResponse
-// @Failure 500 {object} dto.ErrorResponse
-// @Router /api/customers/{id}/logo-small [post]
-func UploadCustomerLogoSmall(c *gin.Context) {
-	id := c.Param("id")
-
-	// Check if customer exists
-	var customer entity.Customer
-	result := config.DB.First(&customer, id)
-	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
-		return
-	}
-
-	// Get uploaded file
-	file, err := c.FormFile("logo_small")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "No file uploaded"})
-		return
-	}
-
-	// Validate file extension - support .icon, .svg, .jpg, .png, .jpeg, .webp
-	ext := strings.ToLower(filepath.Ext(file.Filename))
-	allowedExts := []string{".icon", ".svg", ".jpg", ".jpeg", ".png", ".webp"}
-	isValidExt := false
-	for _, allowedExt := range allowedExts {
-		if ext == allowedExt {
-			isValidExt = true
-			break
-		}
-	}
-
-	if !isValidExt {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Only .icon, .svg, .jpg, .jpeg, .png, and .webp files are allowed"})
-		return
-	}
-
-	// Generate unique filename
-	filename := "logo_small_" + id + "_" + time.Now().Format("20060102150405") + ext
-	logoSmallPath := "uploads/logos_small/" + filename
-
-	// Save file
-	if err := c.SaveUploadedFile(file, logoSmallPath); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
-		return
-	}
-
-	// Update customer logo_small path
-	customer.LogoSmall = logoSmallPath
-	config.DB.Save(&customer)
-
-	c.JSON(http.StatusOK, gin.H{
-		"message":         "Logo small uploaded successfully",
-		"logo_small_path": logoSmallPath,
-		"customer":        customer,
-	})
-}
-
 // @Summary Update block Customer status
 // @Description Update the status of a customer to Blocked
 // @Tags Customers
@@ -433,7 +443,7 @@ func UpdateCustomerStatus(c *gin.Context) {
 		return
 	}
 
-	uid, ok := userID.(uint)
+	uid, ok := userID.(string)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID in token"})
 		return
@@ -445,17 +455,21 @@ func UpdateCustomerStatus(c *gin.Context) {
 	notes := c.PostForm("notes")   // catatan untuk dokumen
 
 	// Validasi status
-	if status != "active" && status != "blocked" {
+	if status != "active" && status != "blocked" && status != "draft" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid status"})
 		return
 	}
 
 	// Cari customer
 	var customer entity.Customer
-	if err := config.DB.First(&customer, id).Error; err != nil {
+	if err := config.DB.Where("id = ?", id).First(&customer).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
 		return
 	}
+
+	// update status customer
+	customer.Status = status
+	config.DB.Save(&customer)
 
 	// Simpan reason ke StatusReasons
 	statusReason := entity.StatusReasons{
@@ -512,7 +526,7 @@ func GetCustomerStatus(c *gin.Context) {
 
 	// Cari customer
 	var customer entity.Customer
-	if err := config.DB.First(&customer, id).Error; err != nil {
+	if err := config.DB.Where("id = ?", id).First(&customer).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
 		return
 	}
@@ -627,4 +641,120 @@ func GetCustomerStats(c *gin.Context) {
 			},
 		},
 	})
+}
+
+// ExportCustomers handles customer export to Excel or PDF
+func ExportCustomers(c *gin.Context) {
+	exportType := c.Query("type")
+
+	// validasi export type
+	if exportType != "excel" && exportType != "pdf" {
+		sendError(c, http.StatusBadRequest, "Invalid export type (must be 'excel' or 'pdf')")
+		return
+	}
+
+	// ambil data customer
+	var customers []entity.Customer
+	if err := config.DB.Find(&customers).Error; err != nil {
+		sendError(c, http.StatusInternalServerError, "Failed to fetch customers")
+		return
+	}
+
+	switch exportType {
+	case "excel":
+		file, err := createExcelFile(customers)
+		if err != nil {
+			sendError(c, http.StatusInternalServerError, "Failed to create excel file: "+err.Error())
+			return
+		}
+		sendFile(c, file, "customers.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+	case "pdf":
+		file, err := createPDFFile(customers)
+		if err != nil {
+			sendError(c, http.StatusInternalServerError, "Failed to create pdf file: "+err.Error())
+			return
+		}
+		sendFile(c, file, "customers.pdf", "application/pdf")
+	}
+}
+
+// helper untuk buat Excel file
+func createExcelFile(customers []entity.Customer) ([]byte, error) {
+	f := excelize.NewFile()
+	sheet := "Customers"
+	f.NewSheet(sheet)
+
+	// header
+	headers := []string{"ID", "Name", "Brand Name", "Code", "Status"}
+	for i, h := range headers {
+		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
+		f.SetCellValue(sheet, cell, h)
+	}
+
+	// data
+	for row, cust := range customers {
+		values := []interface{}{cust.ID, cust.Name, cust.BrandName, cust.Code, cust.Status}
+		for col, val := range values {
+			cell, _ := excelize.CoordinatesToCellName(col+1, row+2)
+			f.SetCellValue(sheet, cell, val)
+		}
+	}
+
+	var buf bytes.Buffer
+	if err := f.Write(&buf); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// helper untuk buat PDF file
+func createPDFFile(customers []entity.Customer) ([]byte, error) {
+	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.AddPage()
+	pdf.SetFont("Arial", "B", 12)
+
+	// header
+	headers := []string{"ID", "Name", "Brand Name", "Code", "Status"}
+	for _, h := range headers {
+		pdf.CellFormat(40, 10, h, "1", 0, "C", false, 0, "")
+	}
+	pdf.Ln(-1)
+
+	// data
+	pdf.SetFont("Arial", "", 10)
+	for _, cust := range customers {
+		pdf.CellFormat(40, 10, cust.ID, "1", 0, "", false, 0, "")
+		pdf.CellFormat(40, 10, cust.Name, "1", 0, "", false, 0, "")
+		pdf.CellFormat(40, 10, cust.BrandName, "1", 0, "", false, 0, "")
+		pdf.CellFormat(40, 10, cust.Code, "1", 0, "", false, 0, "")
+		pdf.CellFormat(40, 10, cust.Status, "1", 0, "", false, 0, "")
+		pdf.Ln(-1)
+	}
+
+	var buf bytes.Buffer
+	err := pdf.Output(&buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// helper untuk kirim response error
+func sendError(c *gin.Context, code int, message string) {
+	c.JSON(code, gin.H{
+		"status":  "failed",
+		"message": message,
+		"data":    nil,
+	})
+}
+
+// helper untuk kirim file
+func sendFile(c *gin.Context, data []byte, filename, contentType string) {
+	c.Header("Content-Type", contentType)
+	c.Header("Content-Disposition", "attachment; filename="+filename)
+	c.Header("Content-Transfer-Encoding", "binary")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Expires", "0")
+	c.Writer.Write(data)
 }

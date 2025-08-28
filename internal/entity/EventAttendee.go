@@ -3,7 +3,6 @@ package entity
 import (
 	"time"
 )
-
 // EventAttendee model - tabel pivot untuk attendees event (many-to-many)
 type EventAttendee struct {
 	EventID uint      `json:"event_id" gorm:"primaryKey;not null"`

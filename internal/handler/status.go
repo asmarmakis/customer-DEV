@@ -275,7 +275,7 @@ func GetCustomersByStatus(c *gin.Context) {
 			Name:      customer.Name,
 			BrandName: customer.BrandName,
 			Code:      customer.Code,
-			/* 		Email:       customer.Email,
+			/* 	Email:       customer.Email,
 			Phone:       customer.Phone,
 			Website:     customer.Website,
 			Description: customer.Description, */
