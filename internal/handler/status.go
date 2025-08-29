@@ -45,8 +45,8 @@ func GetStatuses(c *gin.Context) {
 		statusResponses = append(statusResponses, dto.StatusResponse{
 			ID:         status.ID,
 			StatusName: status.StatusName,
-			CreatedAt:  status.CreatedAt,
-			UpdatedAt:  status.UpdatedAt,
+			CreatedAt:  status.CreatedAt.Format("2006-01-02 15:04:05"),
+			UpdatedAt:  status.UpdatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
 
@@ -80,8 +80,8 @@ func GetStatus(c *gin.Context) {
 	statusResponse := dto.StatusResponse{
 		ID:         status.ID,
 		StatusName: status.StatusName,
-		CreatedAt:  status.CreatedAt,
-		UpdatedAt:  status.UpdatedAt,
+		CreatedAt:  status.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:  status.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
 	c.JSON(http.StatusOK, statusResponse)
@@ -126,8 +126,8 @@ func CreateStatus(c *gin.Context) {
 	statusResponse := dto.StatusResponse{
 		ID:         status.ID,
 		StatusName: status.StatusName,
-		CreatedAt:  status.CreatedAt,
-		UpdatedAt:  status.UpdatedAt,
+		CreatedAt:  status.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:  status.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
 	c.JSON(http.StatusCreated, statusResponse)
@@ -184,8 +184,8 @@ func UpdateStatus(c *gin.Context) {
 	statusResponse := dto.StatusResponse{
 		ID:         status.ID,
 		StatusName: status.StatusName,
-		CreatedAt:  status.CreatedAt,
-		UpdatedAt:  status.UpdatedAt,
+		CreatedAt:  status.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdatedAt:  status.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 
 	c.JSON(http.StatusOK, statusResponse)

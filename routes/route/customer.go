@@ -9,6 +9,7 @@ import (
 func RegisterCustomerRoutes(r *gin.RouterGroup) {
 
 	r.POST("/customers", handler.CreateCustomer)
+	r.POST("/customers/test-json", handler.TestCustomerJSON) // Test JSON validation endpoint
 	r.GET("/customers", handler.GetCustomers)
 
 	r.GET("/customers/statistics", handler.GetCustomerStats)

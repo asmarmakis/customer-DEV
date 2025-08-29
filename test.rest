@@ -1,27 +1,27 @@
 ### Register Admin User
-POST http://localhost:9000/register
+POST http://localhost:8080/register
 Content-Type: application/json
 
 {
     "email": "admin@example.com",
     "username": "admin",
     "password": "admin123",
-    "role_id": 1
+    "role_id": "1"
 }
 
 ### Register Regular User
-POST http://localhost:9000/register
+POST http://localhost:8080/register
 Content-Type: application/json
 
 {
     "email": "user@example.com",
     "username": "regularuser",
     "password": "user123",
-    "role_id": 2
+    "role_id": "2"
 }
 
 ### Login as Admin
-POST http://localhost:9000/login
+POST http://localhost:8080/login
 Content-Type: application/json
 
 {
@@ -41,13 +41,13 @@ Content-Type: application/json
 }
 
 ### Test Role Management - Admin Only
-GET http://localhost:9000/api/roles
+GET http://localhost:8080/api/roles
 Authorization: Bearer {{admin_token}}
 
 @user_token = {{login_response.response.body.token}}
 
 ### Test Admin Access - Should Work
-GET http://localhost:9000/api/customers
+GET http://localhost:8080/api/customers
 Authorization: Bearer {{admin_token}}
 
 ### Test Regular User Access - Should Fail (403 Forbidden)
@@ -159,6 +159,10 @@ Authorization: Bearer {{auth_token}}
 
 ### Get Supplier by ID
 GET http://localhost:8080/api/customers/1
+Authorization: Bearer {{admin_token}}
+
+### Get Customer History
+GET http://localhost:8080/api/customers/1/history
 Authorization: Bearer {{admin_token}}
 
 ### Update Supplier
@@ -919,7 +923,1492 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
   "end_time": "2024-08-21T08:15:00Z"
 }
 
+### ===============================================
+### ASSESSMENT API TESTS - Complete Test Suite
+### ===============================================
+### This file contains comprehensive tests for all assessment-related endpoints
+### Following the project specification requirements for proper request/response handling
 
+### ===============================================
+### AUTHENTICATION SETUP
+### ===============================================
 
+### 1. Setup default roles (MUST be done first)
+POST http://localhost:8080/setup-default-roles
+Content-Type: application/json
 
+###
 
+### 2. Register admin user
+POST http://localhost:8080/register
+Content-Type: application/json
+
+{
+    "username": "assessment_admin",
+    "email": "assessment_admin@example.com",
+    "password": "admin123",
+    "role_id": "1"
+}
+
+###
+
+### 3. Login to get authentication token
+POST http://localhost:8080/login
+Content-Type: application/json
+
+{
+    "username": "assessment_admin",
+    "password": "admin123"
+}
+
+# Copy the token from response above and replace PASTE_TOKEN_HERE in all requests below
+@auth_token = {{login_response.response.body.token}}
+
+###
+
+### 4. Get available roles (to use valid role_id in tests)
+GET http://localhost:8080/api/roles
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# Copy a role ID from the response above to use in assessment creation tests
+
+### ===============================================
+### ASSESSMENT CRUD OPERATIONS
+### ===============================================
+
+### 5. CREATE Assessment - Test Case 1 (Valid Request)
+POST http://localhost:8080/api/assessments
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "name": "Financial Performance Assessment",
+    "role_id": "REPLACE_WITH_VALID_ROLE_ID"
+}
+
+# Expected Response:
+# {
+#   "message": "Assessment created successfully",
+#   "data": {
+#     "id": "01HXYZ123456789ABCDEF",
+#     "name": "Financial Performance Assessment",
+#     "role_id": "REPLACE_WITH_VALID_ROLE_ID",
+#     "is_active": true,
+#     "created_at": "2025-08-29T...",
+#     "updated_at": "2025-08-29T..."
+#   }
+# }
+
+###
+
+### 6. CREATE Assessment - Test Case 2 (Different Assessment)
+POST http://localhost:8080/api/assessments
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "name": "Technical Skills Assessment",
+    "role_id": "REPLACE_WITH_VALID_ROLE_ID"
+}
+
+###
+
+### 7. CREATE Assessment - Test Case 3 (Leadership Assessment)
+POST http://localhost:8080/api/assessments
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "name": "Leadership Competency Assessment",
+    "role_id": "REPLACE_WITH_VALID_ROLE_ID"
+}
+
+###
+
+### 8. GET All Assessments
+GET http://localhost:8080/api/assessments
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# Expected Response:
+# {
+#   "message": "Assessments retrieved successfully",
+#   "data": [
+#     {
+#       "id": "01HXYZ123456789ABCDEF",
+#       "name": "Financial Performance Assessment",
+#       "role_id": "...",
+#       "is_active": true,
+#       "created_at": "...",
+#       "updated_at": "..."
+#     },
+#     ...
+#   ]
+# }
+
+###
+
+### 9. GET Assessment by ID
+GET http://localhost:8080/api/assessments/REPLACE_WITH_ASSESSMENT_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# Replace REPLACE_WITH_ASSESSMENT_ID with actual ID from previous responses
+
+###
+
+### 10. UPDATE Assessment
+PUT http://localhost:8080/api/assessments/REPLACE_WITH_ASSESSMENT_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "name": "Updated Financial Performance Assessment",
+    "is_active": true
+}
+
+###
+
+### 11. GET Assessments by Role ID
+GET http://localhost:8080/api/assessments/role/REPLACE_WITH_ROLE_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# Replace REPLACE_WITH_ROLE_ID with actual role ID from roles endpoint
+
+### ===============================================
+### ASSESSMENT DETAIL CRUD OPERATIONS
+### ===============================================
+
+### 12. CREATE Assessment Detail - Test Case 1
+POST http://localhost:8080/api/assessments/REPLACE_WITH_ASSESSMENT_ID/details
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "assessment_id": "REPLACE_WITH_ASSESSMENT_ID",
+    "name": "Revenue Growth Analysis"
+}
+
+# Expected Response:
+# {
+#   "message": "Assessment detail created successfully",
+#   "data": {
+#     "id": "01HXYZ123456789ABCDEF",
+#     "assessment_id": "REPLACE_WITH_ASSESSMENT_ID",
+#     "name": "Revenue Growth Analysis",
+#     "is_active": true,
+#     "created_at": "...",
+#     "updated_at": "..."
+#   }
+# }
+
+###
+
+### 13. CREATE Assessment Detail - Test Case 2
+POST http://localhost:8080/api/assessments/REPLACE_WITH_ASSESSMENT_ID/details
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "assessment_id": "REPLACE_WITH_ASSESSMENT_ID",
+    "name": "Profit Margin Evaluation"
+}
+
+###
+
+### 14. CREATE Assessment Detail - Test Case 3
+POST http://localhost:8080/api/assessments/REPLACE_WITH_ASSESSMENT_ID/details
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "assessment_id": "REPLACE_WITH_ASSESSMENT_ID",
+    "name": "Cash Flow Assessment"
+}
+
+###
+
+### 15. GET Assessment Detail by ID
+GET http://localhost:8080/api/assessments/REPLACE_WITH_ASSESSMENT_ID/details
+Authorization: Bearer PASTE_TOKEN_HERE
+
+###
+
+### 16. UPDATE Assessment Detail
+PUT http://localhost:8080/api/assessments/REPLACE_WITH_ASSESSMENT_ID/details/REPLACE_WITH_DETAIL_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "name": "Updated Revenue Growth Analysis",
+    "is_active": true
+}
+
+# Replace REPLACE_WITH_DETAIL_ID with actual detail ID from create response
+
+### ===============================================
+### ERROR HANDLING TEST CASES
+### ===============================================
+
+### 17. CREATE Assessment - Missing Required Fields (Should Fail with 400)
+POST http://localhost:8080/api/assessments
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "name": "Incomplete Assessment"
+    # Missing required role_id field
+}
+
+# Expected Error Response:
+# {
+#   "error": "Invalid request body"
+# }
+
+###
+
+### 18. CREATE Assessment - Missing Name (Should Fail with 400)
+POST http://localhost:8080/api/assessments
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "role_id": "REPLACE_WITH_VALID_ROLE_ID"
+    # Missing required name field
+}
+
+###
+
+### 19. CREATE Assessment - Invalid Role ID (Should Fail)
+POST http://localhost:8080/api/assessments
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "name": "Assessment with Invalid Role",
+    "role_id": "INVALID_ROLE_ID_12345"
+}
+
+###
+
+### 20. GET Assessment - Invalid ID (Should Fail with 404)
+GET http://localhost:8080/api/assessments/INVALID_ASSESSMENT_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# Expected Error Response:
+# {
+#   "error": "Assessment not found"
+# }
+
+###
+
+### 21. UPDATE Assessment - Invalid ID (Should Fail with 404)
+PUT http://localhost:8080/api/assessments/INVALID_ASSESSMENT_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "name": "Updated Assessment"
+}
+
+###
+
+### 22. CREATE Assessment Detail - Missing Required Fields (Should Fail with 400)
+POST http://localhost:8080/api/assessments/REPLACE_WITH_ASSESSMENT_ID/details
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "assessment_id": "REPLACE_WITH_ASSESSMENT_ID"
+    # Missing required name field
+}
+
+###
+
+### 23. CREATE Assessment Detail - Invalid Assessment ID (Should Fail with 404)
+POST http://localhost:8080/api/assessments/INVALID_ASSESSMENT_ID/details
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "assessment_id": "INVALID_ASSESSMENT_ID",
+    "name": "Detail for Invalid Assessment"
+}
+
+### ===============================================
+### AUTHENTICATION TEST CASES
+### ===============================================
+
+### 24. CREATE Assessment - No Authorization (Should Fail with 401)
+POST http://localhost:8080/api/assessments
+Content-Type: application/json
+
+{
+    "name": "Unauthorized Assessment",
+    "role_id": "REPLACE_WITH_VALID_ROLE_ID"
+}
+
+# Expected Error Response:
+# {
+#   "error": "Unauthorized" or "Invalid token format"
+# }
+
+###
+
+### 25. GET Assessments - No Authorization (Should Fail with 401)
+GET http://localhost:8080/api/assessments
+
+###
+
+### 26. CREATE Assessment - Invalid Token (Should Fail with 401)
+POST http://localhost:8080/api/assessments
+Authorization: Bearer INVALID_TOKEN_12345
+Content-Type: application/json
+
+{
+    "name": "Assessment with Invalid Token",
+    "role_id": "REPLACE_WITH_VALID_ROLE_ID"
+}
+
+### ===============================================
+### DELETE OPERATIONS TEST CASES
+### ===============================================
+
+### 27. DELETE Assessment Detail
+DELETE http://localhost:8080/api/assessments/REPLACE_WITH_ASSESSMENT_ID/details/REPLACE_WITH_DETAIL_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# Expected Response: 204 No Content (successful deletion)
+
+###
+
+### 28. DELETE Assessment Detail - Invalid ID (Should Fail with 404)
+DELETE http://localhost:8080/api/assessments/REPLACE_WITH_ASSESSMENT_ID/details/INVALID_DETAIL_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+
+###
+
+### 29. DELETE Assessment
+DELETE http://localhost:8080/api/assessments/REPLACE_WITH_ASSESSMENT_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# Expected Response: 204 No Content (successful deletion)
+
+###
+
+### 30. DELETE Assessment - Invalid ID (Should Fail with 404)
+DELETE http://localhost:8080/api/assessments/INVALID_ASSESSMENT_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### ===============================================
+### EDGE CASES AND VALIDATION TESTS
+### ===============================================
+
+### 31. CREATE Assessment - Empty Name (Should Fail)
+POST http://localhost:8080/api/assessments
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "name": "",
+    "role_id": "REPLACE_WITH_VALID_ROLE_ID"
+}
+
+###
+
+### 32. CREATE Assessment - Very Long Name (Test Length Validation)
+POST http://localhost:8080/api/assessments
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "name": "This is a very long assessment name that might exceed database field limits and should be tested to ensure proper validation is in place for the name field to prevent database errors and ensure good user experience",
+    "role_id": "REPLACE_WITH_VALID_ROLE_ID"
+}
+
+###
+
+### 33. UPDATE Assessment - Partial Update (Only Name)
+PUT http://localhost:8080/api/assessments/REPLACE_WITH_ASSESSMENT_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "name": "Partially Updated Assessment Name"
+}
+
+###
+
+### 34. UPDATE Assessment - Partial Update (Only Status)
+PUT http://localhost:8080/api/assessments/REPLACE_WITH_ASSESSMENT_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "is_active": false
+}
+
+### ===============================================
+### TEST NOTES AND INSTRUCTIONS
+### ===============================================
+
+# IMPORTANT INSTRUCTIONS FOR RUNNING THESE TESTS:
+#
+# 1. SETUP PHASE (CRITICAL):
+#    - Run tests 1-4 in sequence first to set up authentication
+#    - Copy the token from login response and replace ALL instances of "PASTE_TOKEN_HERE"
+#    - Copy valid role IDs from test 4 response and replace "REPLACE_WITH_VALID_ROLE_ID"
+#
+# 2. CRUD OPERATIONS:
+#    - Run tests 5-11 to test basic assessment operations
+#    - Copy assessment IDs from create responses to use in subsequent tests
+#    - Replace "REPLACE_WITH_ASSESSMENT_ID" with actual IDs
+#
+# 3. DETAIL OPERATIONS:
+#    - Run tests 12-16 to test assessment detail operations
+#    - Copy detail IDs from create responses for update/delete tests
+#    - Replace "REPLACE_WITH_DETAIL_ID" with actual detail IDs
+#
+# 4. ERROR HANDLING:
+#    - Tests 17-26 validate proper error responses and status codes
+#    - These should all fail with appropriate error messages
+#
+# 5. CLEANUP:
+#    - Tests 27-30 demonstrate delete operations
+#    - Run these last to clean up test data
+#
+# 6. EXPECTED RESPONSES:
+#    - All successful operations should return status 200/201
+#    - All authentication errors should return status 401
+#    - All not found errors should return status 404
+#    - All validation errors should return status 400
+#    - Delete operations should return status 204
+#
+# 7. DATA VALIDATION:
+#    - All responses should follow the DTO structure defined in dto.go
+#    - Assessment entities use ULID for primary keys
+#    - CreatedAt and UpdatedAt timestamps should be properly formatted
+#    - Error responses should include descriptive error messages
+
+### ===============================================
+### ADDITIONAL VERIFICATION TESTS
+### ===============================================
+
+### 35. Verify Assessment List After Operations
+GET http://localhost:8080/api/assessments
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# This should show remaining assessments after create/delete operations
+
+###
+
+### 36. Verify Role-Specific Assessments
+GET http://localhost:8080/api/assessments/role/REPLACE_WITH_ROLE_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# This should show only assessments assigned to the specific role
+
+### ===============================================
+### EVENT API TESTS - Complete Test Suite
+### ===============================================
+### This file contains comprehensive tests for all event-related endpoints
+### Following the project specification requirements for proper request/response handling
+
+### ===============================================
+### AUTHENTICATION SETUP
+### ===============================================
+
+### 1. Setup default roles (MUST be done first)
+POST http://localhost:8080/setup-default-roles
+Content-Type: application/json
+
+###
+
+### 2. Register admin user
+POST http://localhost:8080/register
+Content-Type: application/json
+
+{
+    "username": "event_admin",
+    "email": "event_admin@example.com",
+    "password": "admin123",
+    "role_id": "1"
+}
+
+###
+
+### 3. Login to get authentication token
+POST http://localhost:8080/login
+Content-Type: application/json
+
+{
+    "username": "event_admin",
+    "password": "admin123"
+}
+
+# Copy the token from response above and replace PASTE_TOKEN_HERE in all requests below
+@auth_token = {{login_response.response.body.token}}
+
+### ===============================================
+### EVENT API TESTING - COMPREHENSIVE TEST SUITE
+### ===============================================
+
+### PREREQUISITE DATA SETUP
+### ===============================================
+
+### 1. Register Admin User (if not exists)
+POST http://localhost:8080/register
+Content-Type: application/json
+
+{
+    "name": "Event Admin",
+    "email": "eventadmin@test.com",
+    "password": "password123",
+    "role_id": "1"
+}
+
+###
+
+### 2. Login Admin User
+POST http://localhost:8080/login
+Content-Type: application/json
+
+{
+    "email": "eventadmin@test.com",
+    "password": "password123"
+}
+
+# Copy JWT token from response and replace PASTE_TOKEN_HERE in all requests below
+
+###
+
+### 3. Get Available Roles (for reference)
+GET http://localhost:8080/api/roles
+Authorization: Bearer PASTE_TOKEN_HERE
+
+###
+
+### 4. Create Test Customer for Events
+POST http://localhost:8080/api/customers
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "name": "PT Event Management Solutions",
+    "brandName": "EventPro",
+    "code": "EVT2024",
+    "addresses": [
+        {
+            "name": "Head Office",
+            "address": "Jl. Sudirman No. 45, Jakarta Pusat",
+            "isMain": true,
+            "active": true
+        },
+        {
+            "name": "Event Venue",
+            "address": "Jl. Gatot Subroto No. 88, Jakarta Selatan",
+            "isMain": false,
+            "active": true
+        }
+    ],
+    "contacts": [
+        {
+            "name": "Sarah Johnson",
+            "birthdate": "1985-03-15",
+            "jobPosition": "Event Director",
+            "email": "sarah@eventpro.com",
+            "phone": "021-5551234",
+            "mobile": "0812-9876-5432",
+            "isMain": true,
+            "active": true
+        },
+        {
+            "name": "Michael Chen",
+            "birthdate": "1988-07-22",
+            "jobPosition": "Event Coordinator",
+            "email": "michael@eventpro.com",
+            "phone": "021-5551235",
+            "mobile": "0813-1234-5678",
+            "isMain": false,
+            "active": true
+        }
+    ],
+    "others": [
+        {
+            "key": "max_capacity",
+            "value": "1000 participants",
+            "active": true
+        },
+        {
+            "key": "specialization",
+            "value": "Corporate Events, Conferences, Workshops",
+            "active": true
+        }
+    ]
+}
+
+# Copy customer_id from response above for use in event tests
+# Example: "customer_id": 123
+
+###
+
+### 5. Create Test Project (if needed)
+POST http://localhost:8080/api/projects
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "name": "Q1 2024 Event Series",
+    "description": "Quarterly event management project",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "status": "active"
+}
+
+# Copy project_id from response above
+# Example: "project_id": 1
+
+### ===============================================
+### EVENT CRUD OPERATIONS - CREATE EVENTS
+### ===============================================
+
+### 6. CREATE Event - Corporate Conference
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2024-04-15T09:00:00Z",
+    "scheduled_time": "2024-04-15T09:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": "REPLACE_WITH_PROJECT_ID",
+    "location": "Jakarta Convention Center - Hall A",
+    "agenda": "Annual Corporate Technology Conference 2024 - Keynote speakers, product launches, and networking sessions",
+    "status": "upcoming"
+}
+
+# Expected Response: Event created with auto-generated ULID
+# Copy event_id from response for subsequent tests
+
+###
+
+### 7. CREATE Event - Workshop Training
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 2,
+    "scheduled_at": "2024-04-22T13:00:00Z",
+    "scheduled_time": "2024-04-22T13:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": "REPLACE_WITH_PROJECT_ID",
+    "location": "Training Center Menteng - Room 301",
+    "agenda": "Digital Marketing Workshop for SMEs - Social media strategies, content creation, and analytics",
+    "status": "planned"
+}
+
+###
+
+### 8. CREATE Event - Product Launch
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 3,
+    "scheduled_at": "2024-05-10T18:00:00Z",
+    "scheduled_time": "2024-05-10T18:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": "REPLACE_WITH_PROJECT_ID",
+    "location": "Grand Ballroom Hotel Indonesia",
+    "agenda": "New Product Line Launch Event - Live demonstrations, customer testimonials, and exclusive previews",
+    "status": "confirmed"
+}
+
+###
+
+### 9. CREATE Event - Team Building
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2024-05-25T08:00:00Z",
+    "scheduled_time": "2024-05-25T08:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": "REPLACE_WITH_PROJECT_ID",
+    "location": "Puncak Resort & Convention Center",
+    "agenda": "Annual Team Building Retreat - Outdoor activities, leadership workshops, and team bonding sessions",
+    "status": "upcoming"
+}
+
+###
+
+### 10. CREATE Event - Webinar (Virtual Event)
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 4,
+    "scheduled_at": "2024-06-05T14:00:00Z",
+    "scheduled_time": "2024-06-05T14:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": "REPLACE_WITH_PROJECT_ID",
+    "location": "Virtual - Zoom Platform",
+    "agenda": "Industry Trends Webinar - Market analysis, future predictions, and Q&A session",
+    "status": "upcoming"
+}
+
+### ===============================================
+### EVENT CRUD OPERATIONS - READ EVENTS
+### ===============================================
+
+### 11. GET All Events (Default Pagination)
+GET http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# Expected Response:
+# {
+#   "status": 200,
+#   "message": "Events retrieved successfully",
+#   "data": [
+#     {
+#       "id": "01HXYZ123456789ABCDEF",
+#       "activity_type_id": 1,
+#       "scheduled_at": "2024-04-15T09:00:00Z",
+#       "customer_id": 123,
+#       "project_id": 1,
+#       "location": "Jakarta Convention Center - Hall A",
+#       "agenda": "Annual Corporate Technology Conference 2024...",
+#       "status": "upcoming",
+#       "is_active": true,
+#       "created_at": "...",
+#       "updated_at": "..."
+#     }
+#   ]
+# }
+
+###
+
+### 12. GET All Events with Custom Pagination
+GET http://localhost:8080/api/events?limit=5&page=1
+Authorization: Bearer PASTE_TOKEN_HERE
+
+###
+
+### 13. GET All Events - Large Page Size
+GET http://localhost:8080/api/events?limit=20&page=1
+Authorization: Bearer PASTE_TOKEN_HERE
+
+###
+
+### 14. GET All Events - Second Page
+GET http://localhost:8080/api/events?limit=3&page=2
+Authorization: Bearer PASTE_TOKEN_HERE
+
+###
+
+### 15. GET Event by ID (Replace with actual event ID)
+GET http://localhost:8080/api/events/REPLACE_WITH_EVENT_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# Expected Response: Single event object with all details
+# Replace REPLACE_WITH_EVENT_ID with actual ID from create responses
+
+###
+
+### 16. GET Events by Customer ID
+GET http://localhost:8080/api/customers/REPLACE_WITH_CUSTOMER_ID/events
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# Expected Response: Array of events for the specific customer
+
+###
+
+### 17. GET Events by Type - Upcoming
+GET http://localhost:8080/api/event/type/upcoming
+Authorization: Bearer PASTE_TOKEN_HERE
+
+###
+
+### 18. GET Events by Type - Planned
+GET http://localhost:8080/api/event/type/planned
+Authorization: Bearer PASTE_TOKEN_HERE
+
+###
+
+### 19. GET Events by Type - Confirmed
+GET http://localhost:8080/api/event/type/confirmed
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### ===============================================
+### EVENT CRUD OPERATIONS - UPDATE EVENTS
+### ===============================================
+
+### 20. UPDATE Event - Complete Update
+PUT http://localhost:8080/api/events/REPLACE_WITH_EVENT_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2024-04-15T10:00:00Z",
+    "scheduled_time": "2024-04-15T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": "REPLACE_WITH_PROJECT_ID",
+    "location": "Updated Location - Jakarta Convention Center - Hall B",
+    "agenda": "Updated: Annual Corporate Technology Conference 2024 - Extended program with additional workshops",
+    "status": "confirmed"
+}
+
+# Expected Response: Updated event object
+
+###
+
+### 21. UPDATE Event - Status Change Only
+PUT http://localhost:8080/api/events/REPLACE_WITH_EVENT_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "status": "cancelled"
+}
+
+###
+
+### 22. UPDATE Event - Location and Time Change
+PUT http://localhost:8080/api/events/REPLACE_WITH_EVENT_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "scheduled_at": "2024-04-16T14:00:00Z",
+    "scheduled_time": "2024-04-16T14:00:00Z",
+    "location": "New Venue - Shangri-La Hotel Jakarta",
+    "status": "rescheduled"
+}
+
+### ===============================================
+### EVENT CRUD OPERATIONS - DELETE EVENTS
+### ===============================================
+
+### 23. DELETE Event
+DELETE http://localhost:8080/api/events/REPLACE_WITH_EVENT_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# Expected Response: 204 No Content (successful deletion)
+
+###
+
+### 24. DELETE Event - Verify Deletion (Should return 404)
+GET http://localhost:8080/api/events/REPLACE_WITH_EVENT_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# Expected Response: 404 Not Found
+
+### ===============================================
+### ERROR HANDLING AND VALIDATION TESTS
+### ===============================================
+
+### 25. CREATE Event - Missing Required Fields (Should Fail with 400)
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "location": "Missing Required Fields Event",
+    "agenda": "This should fail due to missing required fields"
+}
+
+# Expected Error Response:
+# {
+#   "error": "Key: 'Event.ActivityTypeId' Error:Field validation for 'ActivityTypeId' failed on the 'required' tag"
+# }
+
+###
+
+### 26. CREATE Event - Invalid Customer ID (Should Fail)
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2024-04-15T10:00:00Z",
+    "scheduled_time": "2024-04-15T10:00:00Z",
+    "customer_id": 99999,
+    "project_id": 1,
+    "location": "Test Location",
+    "agenda": "Test with invalid customer ID",
+    "status": "upcoming"
+}
+
+###
+
+### 27. CREATE Event - Invalid Date Format (Should Fail with 400)
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "invalid-date-format",
+    "scheduled_time": "2024-04-15T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": 1,
+    "location": "Test Location",
+    "agenda": "Test with invalid date format",
+    "status": "upcoming"
+}
+
+###
+
+### 28. GET Event - Invalid ID (Should Fail with 404)
+GET http://localhost:8080/api/events/INVALID_EVENT_ID_999
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# Expected Error Response:
+# {
+#   "error": "Event not found"
+# }
+
+###
+
+### 29. UPDATE Event - Invalid ID (Should Fail with 404)
+PUT http://localhost:8080/api/events/INVALID_EVENT_ID_999
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "location": "Updated Location",
+    "agenda": "Updated Agenda",
+    "status": "confirmed"
+}
+
+###
+
+### 30. DELETE Event - Invalid ID (Should Fail with 404)
+DELETE http://localhost:8080/api/events/INVALID_EVENT_ID_999
+Authorization: Bearer PASTE_TOKEN_HERE
+
+###
+
+### 31. GET Customer Events - Invalid Customer ID (Should Fail)
+GET http://localhost:8080/api/customers/99999/events
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### ===============================================
+### AUTHENTICATION AND AUTHORIZATION TESTS
+### ===============================================
+
+### 32. CREATE Event - No Authorization (Should Fail with 401)
+POST http://localhost:8080/api/events
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2024-04-15T10:00:00Z",
+    "scheduled_time": "2024-04-15T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": 1,
+    "location": "Unauthorized Event",
+    "agenda": "This should fail due to missing authorization",
+    "status": "upcoming"
+}
+
+# Expected Error Response:
+# {
+#   "error": "Unauthorized" or "Invalid token format"
+# }
+
+###
+
+### 33. GET Events - No Authorization (Should Fail with 401)
+GET http://localhost:8080/api/events
+
+###
+
+### 34. CREATE Event - Invalid Token (Should Fail with 401)
+POST http://localhost:8080/api/events
+Authorization: Bearer INVALID_TOKEN_12345
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2024-04-15T10:00:00Z",
+    "scheduled_time": "2024-04-15T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": 1,
+    "location": "Invalid Token Event",
+    "agenda": "Test with invalid token",
+    "status": "upcoming"
+}
+
+### ===============================================
+### EDGE CASES AND BUSINESS LOGIC TESTS
+### ===============================================
+
+### 35. CREATE Event - Past Date (Business Logic Test)
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2020-01-01T10:00:00Z",
+    "scheduled_time": "2020-01-01T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": 1,
+    "location": "Past Date Test Location",
+    "agenda": "Test event with past date",
+    "status": "upcoming"
+}
+
+# Note: This may be allowed depending on business rules
+
+###
+
+### 36. CREATE Event - Empty Location and Agenda
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2024-06-15T10:00:00Z",
+    "scheduled_time": "2024-06-15T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": 1,
+    "location": "",
+    "agenda": "",
+    "status": "draft"
+}
+
+###
+
+### 37. CREATE Event - Very Long Agenda (Length Validation)
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2024-07-20T10:00:00Z",
+    "scheduled_time": "2024-07-20T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": 1,
+    "location": "Test Location",
+    "agenda": "This is a very long agenda that might exceed database field limits and should be tested to ensure proper validation is in place for the agenda field to prevent database errors and ensure good user experience with comprehensive event descriptions that include detailed information about speakers, topics, schedules, and other relevant event details that could potentially cause issues if not properly handled by the system validation mechanisms",
+    "status": "planned"
+}
+
+###
+
+### 38. CREATE Event - Special Characters in Fields
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2024-08-10T10:00:00Z",
+    "scheduled_time": "2024-08-10T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": 1,
+    "location": "Café & Restaurant 'Le Français' - Salle de Conférence #1",
+    "agenda": "Event with special chars: àáâãäåæçèéêë & symbols @#$%^&*()_+-={}[]|\\:;\"'<>,.?/~`",
+    "status": "upcoming"
+}
+
+### ===============================================
+### BULK OPERATIONS AND PERFORMANCE TESTS
+### ===============================================
+
+### 39. CREATE Multiple Events for Load Testing - Event 1
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2024-09-01T10:00:00Z",
+    "scheduled_time": "2024-09-01T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": "REPLACE_WITH_PROJECT_ID",
+    "location": "Bulk Test Event 1 - Jakarta",
+    "agenda": "First event in bulk test series - Performance testing",
+    "status": "upcoming"
+}
+
+###
+
+### 40. CREATE Multiple Events for Load Testing - Event 2
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 2,
+    "scheduled_at": "2024-09-02T10:00:00Z",
+    "scheduled_time": "2024-09-02T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": "REPLACE_WITH_PROJECT_ID",
+    "location": "Bulk Test Event 2 - Bandung",
+    "agenda": "Second event in bulk test series - Load testing",
+    "status": "planned"
+}
+
+###
+
+### 41. CREATE Multiple Events for Load Testing - Event 3
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 3,
+    "scheduled_at": "2024-09-03T10:00:00Z",
+    "scheduled_time": "2024-09-03T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": "REPLACE_WITH_PROJECT_ID",
+    "location": "Bulk Test Event 3 - Surabaya",
+    "agenda": "Third event in bulk test series - Stress testing",
+    "status": "confirmed"
+}
+
+###
+
+### 42. GET Events with Large Pagination
+GET http://localhost:8080/api/events?limit=50&page=1
+Authorization: Bearer PASTE_TOKEN_HERE
+
+###
+
+### 43. GET Events with Small Pagination (Performance Test)
+GET http://localhost:8080/api/events?limit=2&page=1
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### ===============================================
+### FINAL VERIFICATION AND CLEANUP TESTS
+### ===============================================
+
+### 44. Verify All Events Created
+GET http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# This should show all events created during testing
+
+###
+
+### 45. Verify Customer Events
+GET http://localhost:8080/api/customers/REPLACE_WITH_CUSTOMER_ID/events
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# This should show all events for the test customer
+
+###
+
+### 46. Verify Events by Type - Final Check
+GET http://localhost:8080/api/event/type/upcoming
+Authorization: Bearer PASTE_TOKEN_HERE
+
+###
+
+### 47. Count Total Events (if pagination shows total)
+GET http://localhost:8080/api/events?limit=1&page=1
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# Use this to verify total count of events created
+
+### ===============================================
+### AUTHENTICATION TEST CASES
+### ===============================================
+
+### 22. CREATE Event - No Authorization (Should Fail with 401)
+POST http://localhost:8080/api/events
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2024-03-15T10:00:00Z",
+    "scheduled_time": "2024-03-15T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": 1,
+    "location": "Unauthorized Event",
+    "agenda": "This should fail due to missing authorization",
+    "status": "upcoming"
+}
+
+# Expected Error Response:
+# {
+#   "error": "Unauthorized" or "Invalid token format"
+# }
+
+###
+
+### 23. GET Events - No Authorization (Should Fail with 401)
+GET http://localhost:8080/api/events
+
+###
+
+### 24. CREATE Event - Invalid Token (Should Fail with 401)
+POST http://localhost:8080/api/events
+Authorization: Bearer INVALID_TOKEN_12345
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2024-03-15T10:00:00Z",
+    "scheduled_time": "2024-03-15T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": 1,
+    "location": "Invalid Token Event",
+    "agenda": "Test with invalid token",
+    "status": "upcoming"
+}
+
+### ===============================================
+### EDGE CASES AND VALIDATION TESTS
+### ===============================================
+
+### 25. CREATE Event - Past Date (Business Logic Test)
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2020-01-01T10:00:00Z",
+    "scheduled_time": "2020-01-01T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": 1,
+    "location": "Past Date Test Location",
+    "agenda": "Test event with past date",
+    "status": "upcoming"
+}
+
+# Note: This may be allowed depending on business rules
+
+###
+
+### 26. CREATE Event - Empty Location and Agenda
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2024-06-15T10:00:00Z",
+    "scheduled_time": "2024-06-15T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": 1,
+    "location": "",
+    "agenda": "",
+    "status": "draft"
+}
+
+###
+
+### 27. UPDATE Event - Partial Update (Only Status)
+PUT http://localhost:8080/api/events/REPLACE_WITH_EVENT_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "status": "cancelled"
+}
+
+###
+
+### 28. CREATE Event - Very Long Agenda (Length Validation)
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2024-07-20T10:00:00Z",
+    "scheduled_time": "2024-07-20T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": 1,
+    "location": "Test Location",
+    "agenda": "This is a very long agenda that might exceed database field limits and should be tested to ensure proper validation is in place for the agenda field to prevent database errors and ensure good user experience with comprehensive event descriptions that include detailed information about speakers, topics, schedules, and other relevant event details",
+    "status": "planned"
+}
+
+### ===============================================
+### DELETE OPERATIONS TEST CASES
+### ===============================================
+
+### 29. DELETE Event
+DELETE http://localhost:8080/api/events/REPLACE_WITH_EVENT_ID
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# Expected Response: 204 No Content (successful deletion)
+
+###
+
+### 30. DELETE Event - Invalid ID (Should Fail with 404)
+DELETE http://localhost:8080/api/events/INVALID_EVENT_ID_999
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### ===============================================
+### BULK OPERATIONS AND PERFORMANCE TESTS
+### ===============================================
+
+### 31. CREATE Multiple Events for Load Testing
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 1,
+    "scheduled_at": "2024-08-01T10:00:00Z",
+    "scheduled_time": "2024-08-01T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": 1,
+    "location": "Bulk Test Event 1",
+    "agenda": "First event in bulk test series",
+    "status": "upcoming"
+}
+
+###
+
+### 32. CREATE Multiple Events for Load Testing - Event 2
+POST http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+Content-Type: application/json
+
+{
+    "activity_type_id": 2,
+    "scheduled_at": "2024-08-02T10:00:00Z",
+    "scheduled_time": "2024-08-02T10:00:00Z",
+    "customer_id": "REPLACE_WITH_CUSTOMER_ID",
+    "project_id": 1,
+    "location": "Bulk Test Event 2",
+    "agenda": "Second event in bulk test series",
+    "status": "upcoming"
+}
+
+###
+
+### 33. GET Events with Large Pagination
+GET http://localhost:8080/api/events?limit=50&page=1
+Authorization: Bearer PASTE_TOKEN_HERE
+
+### ===============================================
+### FINAL VERIFICATION TESTS
+### ===============================================
+
+### 34. Verify All Events Created
+GET http://localhost:8080/api/events
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# This should show all events created during testing
+
+###
+
+### 35. Verify Customer Events
+GET http://localhost:8080/api/customers/REPLACE_WITH_CUSTOMER_ID/events
+Authorization: Bearer PASTE_TOKEN_HERE
+
+# This should show all events for the test customer
+
+### ===============================================
+### TEST NOTES AND INSTRUCTIONS
+### ===============================================
+
+# IMPORTANT INSTRUCTIONS FOR RUNNING THESE TESTS:
+#
+# 1. SETUP PHASE (CRITICAL):
+#    - Run tests 1-4 in sequence first to set up authentication and test customer
+#    - Copy the token from login response and replace ALL instances of "PASTE_TOKEN_HERE"
+#    - Copy customer ID from customer creation response and replace "REPLACE_WITH_CUSTOMER_ID"
+#
+# 2. CRUD OPERATIONS:
+#    - Run tests 5-11 to test basic event operations
+#    - Copy event IDs from create responses to use in subsequent tests
+#    - Replace "REPLACE_WITH_EVENT_ID" with actual IDs
+#
+# 3. CUSTOMER-SPECIFIC OPERATIONS:
+#    - Test 12 validates customer-event relationships
+#    - Ensure customer ID is properly replaced before running
+#
+# 4. FILTERING OPERATIONS:
+#    - Tests 13-15 test event filtering by status/type
+#    - These may need adjustment based on actual API implementation
+#
+# 5. ERROR HANDLING:
+#    - Tests 16-21 validate proper error responses and status codes
+#    - These should all fail with appropriate error messages
+#
+# 6. AUTHENTICATION:
+#    - Tests 22-24 verify proper authentication requirements
+#    - All should fail with 401 status codes
+#
+# 7. EDGE CASES:
+#    - Tests 25-28 test business logic and validation
+#    - Results may vary based on business rules implementation
+#
+# 8. CLEANUP:
+#    - Tests 29-30 demonstrate delete operations
+#    - Run these to clean up test data
+#
+# 9. PERFORMANCE:
+#    - Tests 31-33 create bulk data for performance testing
+#    - Monitor response times and database performance
+#
+# 10. VERIFICATION:
+#     - Tests 34-35 verify final state after all operations
+#     - Use these to confirm test completion and data integrity
+#
+# 11. EXPECTED RESPONSES:
+#     - All successful operations should return appropriate status codes (200/201/204)
+#     - All authentication errors should return status 401
+#     - All not found errors should return status 404
+#     - All validation errors should return status 400
+#     - Event entities use ULID for primary keys
+#     - Timestamps should be properly formatted in ISO 8601 format
+#
+# 12. DATA VALIDATION:
+#     - All responses should follow the Event entity structure
+#     - Foreign key relationships should be properly maintained
+#     - Date/time fields should be in proper UTC format
+#     - Status values should be from allowed set: upcoming, planned, confirmed, cancelled, completed
+#
+# 13. COMPREHENSIVE TEST COVERAGE SUMMARY:
+#     ✓ User Authentication (Registration, Login, Role Management)
+#     ✓ Customer Management (Creation with detailed data)
+#     ✓ Project Management (Optional project creation)
+#     ✓ Event CRUD Operations (Create, Read, Update, Delete)
+#     ✓ Event Filtering (By type, customer, pagination)
+#     ✓ Error Handling (Missing fields, invalid data, authentication)
+#     ✓ Edge Cases (Past dates, special characters, long text)
+#     ✓ Bulk Operations (Multiple event creation)
+#     ✓ Performance Testing (Large pagination, load testing)
+#     ✓ Final Verification (Data consistency checks)
+#
+# TOTAL TEST CASES: 47 comprehensive tests covering all aspects of Event API
+# - Prerequisites: 5 tests (User setup, Customer creation, Project creation)
+# - Event Creation: 5 tests (Various event types with realistic data)
+# - Read Operations: 9 tests (Pagination, filtering, customer-specific)
+# - Update/Delete: 5 tests (Modification and removal operations)
+# - Error Handling: 14 tests (Validation, authentication, not found)
+# - Bulk Operations: 5 tests (Performance and load testing)
+# - Final Verification: 4 tests (Data integrity confirmation)
+#
+### ===============================================
+### END OF COMPREHENSIVE EVENT API TEST SUITE
+### ===============================================
+#
+# This test suite provides complete coverage for the Event API endpoint
+# including all CRUD operations, error scenarios, and edge cases.
+# Follow the instructions above for proper test execution sequence.
+#
+# Server Configuration: http://localhost:8080
+# API Base Path: /api/events
+# Authentication: JWT Bearer Token Required
+# Data Format: JSON
+# Primary Key: ULID
+# Timestamps: ISO 8601 UTC Format

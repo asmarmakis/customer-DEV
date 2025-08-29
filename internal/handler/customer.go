@@ -33,7 +33,7 @@ func GetCustomers(c *gin.Context) {
 	var customers []entity.Customer
 	status := c.Query("status")
 
-	db := config.DB
+	db := config.DB.Preload("AccountManager")
 	if status != "" {
 		db = db.Where("status = ?", status)
 	}
@@ -42,6 +42,34 @@ func GetCustomers(c *gin.Context) {
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch customers"})
 		return
+	}
+
+	// Convert entity customers to DTO response format with proper field ordering
+	var customerResponses []dto.CustomerListResponse
+	for _, customer := range customers {
+		customerResponse := dto.CustomerListResponse{
+			ID:          customer.ID,
+			Name:        customer.Name,
+			BrandName:   customer.BrandName,
+			Code:        customer.Code,
+			Logo:        customer.Logo,
+			Status:      customer.Status,
+			Category:    customer.Category,
+			Rating:      customer.Rating,
+			AverageCost: customer.AverageCost,
+			LogoSmall:   customer.LogoSmall,
+			CreatedAt:   customer.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:   customer.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		}
+
+		// Add manager_name instead of account_manager_id
+		if customer.AccountManager != nil {
+			customerResponse.ManagerName = &customer.AccountManager.ManagerName
+		} else {
+			customerResponse.ManagerName = nil
+		}
+
+		customerResponses = append(customerResponses, customerResponse)
 	}
 
 	// Calculate statistics
@@ -58,7 +86,7 @@ func GetCustomers(c *gin.Context) {
 	config.DB.Model(&entity.Customer{}).Where("status = ?", "blocked").Count(&blockedCustomers)
 
 	c.JSON(http.StatusOK, gin.H{
-		"customers": customers,
+		"customers": customerResponses,
 		"stats": gin.H{
 			"total_customers":   totalCustomers,
 			"new_customers":     newCustomers,
@@ -69,20 +97,93 @@ func GetCustomers(c *gin.Context) {
 }
 
 // @Summary Create new customer
-// @Description Create a new customer record with all related data including addresses, social media, contacts, structures, groups, and other attributes
+// @Description Create a new customer record with all related data including addresses, social media, contacts, structures, groups, and other attributes. You can specify AccountManager either by account_manager_id or manager_name.
 // @Tags Customers
 // @Accept json
 // @Produce json
 // @Security BearerAuth
+// @Param customer body dto.CreateCustomerRequest true "Customer creation request. Use either account_manager_id or manager_name to specify the account manager."
 // @Success 201 {object} entity.Customer
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /api/customers [post]
 func CreateCustomer(c *gin.Context) {
+	// Check if request body exists and is not empty
+	if c.Request.Body == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Request body is required"})
+		return
+	}
+
+	// Check Content-Type header
+	contentType := c.GetHeader("Content-Type")
+	if contentType != "application/json" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Content-Type must be application/json, got: " + contentType,
+			"hint":  "Make sure to set Content-Type: application/json header",
+		})
+		return
+	}
+
 	var req dto.CreateCustomerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// Provide more detailed error information
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid JSON format: " + err.Error(),
+			"hint":  "Please check your JSON syntax and required fields",
+			"required_fields": map[string]string{
+				"name":      "string (required)",
+				"brandName": "string",
+				"code":      "string",
+			},
+			"example": map[string]interface{}{
+				"name":         "PT Example Company",
+				"brandName":    "ExampleCorp",
+				"code":         "EX001",
+				"manager_name": "John Doe",
+			},
+		})
+		return
+	}
+
+	// Validate required fields
+	if req.Name == nil || *req.Name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Field 'name' is required and cannot be empty",
+			"hint":  "Please provide a valid customer name",
+		})
+		return
+	}
+
+	if req.BrandName == nil || *req.BrandName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Field 'brandName' is required and cannot be empty",
+			"hint":  "Please provide a valid brand name",
+		})
+		return
+	}
+
+	if req.Code == nil || *req.Code == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Field 'code' is required and cannot be empty",
+			"hint":  "Please provide a valid customer code",
+		})
+		return
+	}
+
+	// Check if customer code already exists
+	var existingCustomer entity.Customer
+	if err := config.DB.Where("code = ?", *req.Code).First(&existingCustomer).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":      "Customer code '" + *req.Code + "' already exists",
+			"hint":       "Please use a different customer code. Customer codes must be unique.",
+			"suggestion": "Try adding a suffix like: " + *req.Code + "_001, " + *req.Code + "_NEW, or use current timestamp",
+			"existing_customer": map[string]string{
+				"id":   existingCustomer.ID,
+				"name": existingCustomer.Name,
+				"code": existingCustomer.Code,
+			},
+		})
 		return
 	}
 
@@ -107,14 +208,30 @@ func CreateCustomer(c *gin.Context) {
 		}
 	}()
 
+	// Resolve AccountManager ID from manager_name if provided
+	var accountManagerID *string
+	if req.ManagerName != nil && *req.ManagerName != "" {
+		// Lookup AccountManager by manager_name
+		var accountManager entity.AccountManager
+		if err := config.DB.Where("manager_name = ?", *req.ManagerName).First(&accountManager).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Account Manager with name '" + *req.ManagerName + "' not found"})
+			return
+		}
+		accountManagerID = &accountManager.ID
+	} else if req.AccountManagerID != nil {
+		// Use provided AccountManagerID directly
+		accountManagerID = req.AccountManagerID
+	}
+
 	// Di dalam fungsi CreateCustomer, tambahkan setelah Logo assignment:
 	// Create customer entity
 	customer := entity.Customer{
 		Name:             *req.Name,
 		BrandName:        *req.BrandName,
 		Code:             *req.Code,
-		AccountManagerid: *req.AccountManagerId,
-		Status:           "Active", // Default status
+		AccountManagerID: accountManagerID,
+		Status:           "Draft", // Default status
 	}
 
 	// Set logo if provided
@@ -129,6 +246,17 @@ func CreateCustomer(c *gin.Context) {
 
 	if err := tx.Create(&customer).Error; err != nil {
 		tx.Rollback()
+		// Check if it's a unique constraint violation
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			if strings.Contains(err.Error(), "uni_customers_code") {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error":      "Customer code '" + *req.Code + "' already exists in database",
+					"hint":       "This error occurred at database level. Please use a unique customer code.",
+					"suggestion": "Try: " + *req.Code + "_" + time.Now().Format("20060102150405"),
+				})
+				return
+			}
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create customer: " + err.Error()})
 		return
 	}
@@ -265,7 +393,7 @@ func CreateCustomer(c *gin.Context) {
 
 	// Load customer with all relations for response
 	var createdCustomer entity.Customer
-	config.DB.Preload("Addresses").Preload("Sosmeds").Preload("Contacts").Preload("Structures").Preload("Groups").Preload("Others").First(&createdCustomer, customer.ID)
+	config.DB.Preload("AccountManager").Preload("Addresses").Preload("Sosmeds").Preload("Contacts").Preload("Structures").Preload("Groups").Preload("Others").First(&createdCustomer, "id = ?", customer.ID)
 
 	// Mapping manual untuk response
 	response := dto.CustomerResponse{
@@ -273,7 +401,7 @@ func CreateCustomer(c *gin.Context) {
 		Name:             createdCustomer.Name,
 		BrandName:        createdCustomer.BrandName,
 		Code:             createdCustomer.Code,
-		AccountManagerId: createdCustomer.AccountManagerid,
+		AccountManagerID: createdCustomer.AccountManagerID,
 		Logo:             createdCustomer.Logo,
 		LogoSmall:        createdCustomer.LogoSmall,
 		Status:           createdCustomer.Status,
@@ -282,6 +410,14 @@ func CreateCustomer(c *gin.Context) {
 		AverageCost:      createdCustomer.AverageCost,
 		CreatedAt:        createdCustomer.CreatedAt,
 		UpdatedAt:        createdCustomer.UpdatedAt,
+	}
+
+	// Add AccountManager details if exists
+	if createdCustomer.AccountManager != nil {
+		response.AccountManager = &dto.AccountManagerDetail{
+			ID:          createdCustomer.AccountManager.ID,
+			ManagerName: createdCustomer.AccountManager.ManagerName,
+		}
 	}
 
 	// Mapping addresses
@@ -345,13 +481,46 @@ func GetCustomer(c *gin.Context) {
 	id := c.Param("id")
 
 	var customer entity.Customer
-	result := config.DB.First(&customer, id)
+	result := config.DB.Preload("AccountManager").First(&customer, "id = ?", id)
 	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
+		// Enhanced error response with helpful information
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "Customer not found",
+			"message": "Customer with ID '" + id + "' does not exist in the database",
+			"hint":    "Please check the customer ID. You can get valid customer IDs from GET /api/customers",
+			"suggestions": []string{
+				"Verify the customer ID is correct",
+				"Use GET /api/customers to see all available customers",
+				"Check if the customer was deleted",
+			},
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, customer)
+	// Convert to response format excluding unused fields
+	customerResponse := gin.H{
+		"id":           customer.ID,
+		"name":         customer.Name,
+		"brand_name":   customer.BrandName,
+		"code":         customer.Code,
+		"logo":         customer.Logo,
+		"status":       customer.Status,
+		"category":     customer.Category,
+		"rating":       customer.Rating,
+		"average_cost": customer.AverageCost,
+		"logo_small":   customer.LogoSmall,
+		"created_at":   customer.CreatedAt,
+		"updated_at":   customer.UpdatedAt,
+	}
+
+	// Add manager_name instead of account_manager_id
+	if customer.AccountManager != nil {
+		customerResponse["manager_name"] = customer.AccountManager.ManagerName
+	} else {
+		customerResponse["manager_name"] = nil
+	}
+
+	c.JSON(http.StatusOK, customerResponse)
 }
 
 func UpdateCustomer(c *gin.Context) {
@@ -371,9 +540,13 @@ func UpdateCustomer(c *gin.Context) {
 	}
 
 	var customer entity.Customer
-	result := config.DB.First(&customer, id)
+	result := config.DB.First(&customer, "id = ?", id)
 	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "Customer not found",
+			"message": "Customer with ID '" + id + "' does not exist in the database for update operation",
+			"hint":    "Please check the customer ID. You can get valid customer IDs from GET /api/customers",
+		})
 		return
 	}
 
@@ -869,4 +1042,70 @@ func GetHistoryCustomerByUserID(c *gin.Context) {
 		"message": "History customer berhasil diambil",
 		"data":    history,
 	})
+}
+
+// @Summary Test customer JSON payload
+// @Description Test endpoint to validate customer creation JSON payload without actually creating the customer
+// @Tags Customers
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param customer body dto.CreateCustomerRequest true "Customer creation request for testing"
+// @Success 200 {object} dto.CreateCustomerRequest
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Router /api/customers/test-json [post]
+func TestCustomerJSON(c *gin.Context) {
+	// Check Content-Type header
+	contentType := c.GetHeader("Content-Type")
+	if contentType != "application/json" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Content-Type must be application/json, got: " + contentType,
+			"hint":  "Make sure to set Content-Type: application/json header",
+		})
+		return
+	}
+
+	var req dto.CreateCustomerRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "JSON parsing failed: " + err.Error(),
+			"hint":    "Check your JSON syntax",
+			"example": getMinimalCustomerExample(),
+		})
+		return
+	}
+
+	// Return the parsed request for verification
+	c.JSON(http.StatusOK, gin.H{
+		"message": "JSON payload is valid",
+		"parsed":  req,
+		"notes": []string{
+			"This endpoint only validates JSON structure",
+			"To actually create a customer, use POST /api/customers",
+			"Required fields: name, brandName, code",
+			"Optional: manager_name or account_manager_id for account manager assignment",
+		},
+	})
+}
+
+// Helper function to provide a minimal example
+func getMinimalCustomerExample() map[string]interface{} {
+	return map[string]interface{}{
+		"name":         "PT Example Company",
+		"brandName":    "ExampleCorp",
+		"code":         "EX001",
+		"manager_name": "John Doe", // Optional - use this OR account_manager_id
+		"addresses":    []map[string]interface{}{},
+		"contacts":     []map[string]interface{}{},
+		"socials":      []map[string]interface{}{},
+		"structures":   []map[string]interface{}{},
+		"others":       []map[string]interface{}{},
+		"groups": map[string]interface{}{
+			"industryId":        "",
+			"industryActive":    false,
+			"parentGroupId":     "",
+			"parentGroupActive": false,
+		},
+	}
 }

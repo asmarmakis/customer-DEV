@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"customer-api/internal/config"
+	"customer-api/internal/dto"
 	"customer-api/internal/entity"
 
 	"github.com/gin-gonic/gin"
@@ -18,13 +19,6 @@ type LoginInput struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password" binding:"required"`
-}
-
-type RegisterInput struct {
-	Username string `json:"username" binding:"required"`
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
-	RoleID   string   `json:"role_id"` // Tambahkan field role_id (optional)
 }
 
 // @Summary User login
@@ -58,7 +52,6 @@ func Login(c *gin.Context) {
 	} else {
 		usernameOrEmail = input.Email
 	}
-	
 
 	// Cek apakah username/email terdaftar
 	result := config.DB.Where("username = ? OR email = ?", usernameOrEmail, usernameOrEmail).First(&user)
@@ -112,68 +105,101 @@ func Login(c *gin.Context) {
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /register [post]
 func Register(c *gin.Context) {
-	var input RegisterInput
+	var input dto.RegisterRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// Enhanced error handling with detailed validation information
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid request data",
+			"details": err.Error(),
+			"hint":    "Please ensure all required fields are provided with correct data types. role_id can be a string or number.",
+		})
 		return
 	}
 
 	// Check if username already exists
 	var existingUser entity.User
 	if result := config.DB.Where("username = ?", input.Username).First(&existingUser); result.Error == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Username sudah digunakan"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Username already exists",
+			"hint":  "Please choose a different username",
+		})
 		return
 	}
 
 	// Check if email already exists
 	if result := config.DB.Where("email = ?", input.Email).First(&existingUser); result.Error == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Email sudah digunakan"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Email already exists",
+			"hint":  "Please use a different email address",
+		})
 		return
 	}
 
 	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to hash password",
+			"hint":  "Please try again or contact support",
+		})
 		return
 	}
 
-	// Set default role_id jika tidak disediakan
+	// Set default role_id if not provided or validate existing role_id
 	roleID := input.RoleID
-	if roleID == "" { // ✅ string kosong, bukan 0
-		// Cari role "User" dari database
+
+	if roleID == "" {
+		// Find "User" role from database
 		var userRole entity.Role
-		if err := config.DB.Where("name = ?", "User").First(&userRole).Error; err != nil {
-			// Jika role User tidak ditemukan, gunakan role pertama yang ada
+		if err := config.DB.Where("role_name = ?", "User").First(&userRole).Error; err != nil {
+			// If User role not found, use the first available role
 			if err := config.DB.First(&userRole).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Tidak ada role yang tersedia"})
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": "No roles available in the system",
+					"hint":  "Please contact administrator to set up user roles",
+				})
 				return
 			}
 		}
-		roleID = userRole.ID // ✅ sekarang string, bukan uint
+		roleID = userRole.ID
 	} else {
-		// Validasi bahwa role_id yang diberikan ada di database
+		// Validate that the provided role_id exists in database
 		var role entity.Role
 		if err := config.DB.Where("id = ?", roleID).First(&role).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Role ID tidak valid"})
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid role_id",
+				"hint":  "Please provide a valid role ID. Use GET /api/roles to see available roles",
+			})
 			return
 		}
 	}
 
-	// Buat user baru
+	// Create new user
 	user := entity.User{
 		Username: input.Username,
 		Email:    input.Email,
 		Password: string(hashedPassword),
-		RoleID:   roleID, // ✅ string ULID
+		RoleID:   roleID,
 	}
 
 	result := config.DB.Create(&user)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mendaftarkan user: " + result.Error.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to register user",
+			"details": result.Error.Error(),
+			"hint":    "Please try again or contact support",
+		})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "User berhasil didaftarkan"})
+	// Return success response without sensitive data
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "User registered successfully",
+		"user": gin.H{
+			"id":       user.ID,
+			"username": user.Username,
+			"email":    user.Email,
+			"role_id":  user.RoleID,
+		},
+	})
 }
-

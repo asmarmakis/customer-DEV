@@ -6,6 +6,7 @@ import (
 
 	"customer-api/internal/config"
 	"customer-api/internal/entity"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -160,8 +161,8 @@ func DeleteRole(c *gin.Context) {
 func SetupDefaultRoles(c *gin.Context) {
 	// Create default roles if they don't exist
 	defaultRoles := []entity.Role{
-		{ID: "1", RoleName: "admin"},
-		{ID: "2", RoleName: "user"},
+		{ID: "1", RoleName: "Admin"},
+		{ID: "2", RoleName: "User"},
 	}
 
 	for _, role := range defaultRoles {

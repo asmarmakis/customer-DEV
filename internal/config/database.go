@@ -15,6 +15,11 @@ import (
 
 var DB *gorm.DB
 
+// GetDB returns the database instance
+func GetDB() *gorm.DB {
+	return DB
+}
+
 func ConnectDatabase() {
 	// Load .env file
 	err := godotenv.Load()
@@ -55,6 +60,8 @@ func ConnectDatabase() {
 			&entity.ActivityType{},
 			&entity.AccountManager{},
 			&entity.Address{},
+			&entity.Assessment{},
+			&entity.AssessmentDetail{},
 			&entity.Contact{},
 			&entity.Customer{},
 			&entity.Document{},
@@ -84,6 +91,27 @@ func ConnectDatabase() {
 		}
 	}
 
+	// Handle production migration with data cleanup
+	if isProd {
+		fmt.Println("Production mode: Cleaning up invalid foreign key references...")
+
+		// First, create AccountManager table if it doesn't exist
+		if !DB.Migrator().HasTable(&entity.AccountManager{}) {
+			err = DB.AutoMigrate(&entity.AccountManager{})
+			if err != nil {
+				log.Fatal("Failed to create AccountManager table:", err)
+			}
+			fmt.Println("Created AccountManager table")
+		}
+
+		// Check if account_manager_id column exists in customers table
+		if DB.Migrator().HasColumn(&entity.Customer{}, "account_manager_id") {
+			// Clean up invalid account_manager_id references
+			DB.Exec("UPDATE customers SET account_manager_id = NULL WHERE account_manager_id IS NOT NULL AND account_manager_id NOT IN (SELECT id FROM account_managers)")
+			fmt.Println("Cleaned up invalid account_manager_id references")
+		}
+	}
+
 	// Auto migrate the schema - akan membuat tabel sesuai model Go
 	err = DB.AutoMigrate(
 		&entity.Activity{},
@@ -92,6 +120,8 @@ func ConnectDatabase() {
 		&entity.ActivityType{},
 		&entity.AccountManager{},
 		&entity.Address{},
+		&entity.Assessment{},
+		&entity.AssessmentDetail{},
 		&entity.Contact{},
 		&entity.Customer{},
 		&entity.Document{},
@@ -122,17 +152,32 @@ func ConnectDatabase() {
 
 	// Insert default roles if they don't exist
 	var adminRole entity.Role
-	result := DB.Where("role_name = ?", "Admin").First(&adminRole)
+	result := DB.Where("id = ?", "1").First(&adminRole)
 	if result.RowsAffected == 0 {
-		DB.Create(&entity.Role{RoleName: "Admin"})
-		fmt.Println("Created Admin role")
+		DB.Create(&entity.Role{ID: "1", RoleName: "Admin"})
+		fmt.Println("Created Admin role with ID 1")
 	}
 
 	var userRole entity.Role
-	result = DB.Where("role_name = ?", "User").First(&userRole)
+	result = DB.Where("id = ?", "2").First(&userRole)
 	if result.RowsAffected == 0 {
-		DB.Create(&entity.Role{RoleName: "User"})
-		fmt.Println("Created User role")
+		DB.Create(&entity.Role{ID: "2", RoleName: "User"})
+		fmt.Println("Created User role with ID 2")
+	}
+
+	// Insert default account managers if they don't exist
+	var defaultManager entity.AccountManager
+	result = DB.Where("manager_name = ?", "Default Manager").First(&defaultManager)
+	if result.RowsAffected == 0 {
+		DB.Create(&entity.AccountManager{ManagerName: "Default Manager"})
+		fmt.Println("Created Default Manager")
+	}
+
+	var systemManager entity.AccountManager
+	result = DB.Where("manager_name = ?", "System Manager").First(&systemManager)
+	if result.RowsAffected == 0 {
+		DB.Create(&entity.AccountManager{ManagerName: "System Manager"})
+		fmt.Println("Created System Manager")
 	}
 
 	fmt.Println("Database connected and migrated successfully!")

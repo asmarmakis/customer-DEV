@@ -1,8 +1,9 @@
 package entity
 
 import (
-	"time"
 	"crypto/rand"
+	"time"
+
 	"github.com/oklog/ulid/v2"
 	"gorm.io/gorm"
 )
@@ -19,8 +20,7 @@ type Role struct {
 	Users []User `json:"users,omitempty" gorm:"foreignKey:RoleID"`
 }
 
-
 func (r *Role) BeforeCreate(tx *gorm.DB) (err error) {
-    r.ID = ulid.MustNew(ulid.Timestamp(time.Now()), rand.Reader).String()
-    return
+	r.ID = ulid.MustNew(ulid.Timestamp(time.Now()), rand.Reader).String()
+	return
 }

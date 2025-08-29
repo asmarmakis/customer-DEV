@@ -217,11 +217,58 @@ func DeleteStructure(c *gin.Context) {
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Router /api/customers/{id}/with-structures [get]
+// Helper function to build clean customer response without unused fields
+func buildCleanCustomerResponse(customer entity.Customer) gin.H {
+	customerResponse := gin.H{
+		"id":           customer.ID,
+		"name":         customer.Name,
+		"brand_name":   customer.BrandName,
+		"code":         customer.Code,
+		"logo":         customer.Logo,
+		"status":       customer.Status,
+		"category":     customer.Category,
+		"rating":       customer.Rating,
+		"average_cost": customer.AverageCost,
+		"logo_small":   customer.LogoSmall,
+		"created_at":   customer.CreatedAt,
+		"updated_at":   customer.UpdatedAt,
+	}
+
+	// Add manager_name instead of account_manager_id
+	if customer.AccountManager != nil {
+		customerResponse["manager_name"] = customer.AccountManager.ManagerName
+	} else {
+		customerResponse["manager_name"] = nil
+	}
+
+	// Add relationships if they exist
+	if len(customer.Addresses) > 0 {
+		customerResponse["addresses"] = customer.Addresses
+	}
+	if len(customer.Sosmeds) > 0 {
+		customerResponse["sosmeds"] = customer.Sosmeds
+	}
+	if len(customer.Contacts) > 0 {
+		customerResponse["contacts"] = customer.Contacts
+	}
+	if len(customer.Structures) > 0 {
+		customerResponse["structures"] = customer.Structures
+	}
+	if len(customer.Others) > 0 {
+		customerResponse["others"] = customer.Others
+	}
+	if len(customer.Groups) > 0 {
+		customerResponse["groups"] = customer.Groups
+	}
+
+	return customerResponse
+}
+
 func GetCustomerWithStructures(c *gin.Context) {
 	id := c.Param("id")
 
 	var customer entity.Customer
-	result := config.DB.Preload("Structures", func(db *gorm.DB) *gorm.DB {
+	result := config.DB.Preload("AccountManager").Preload("Structures", func(db *gorm.DB) *gorm.DB {
 		return db.Order("level ASC, name ASC")
 	}).First(&customer, id)
 	if result.Error != nil {
@@ -229,7 +276,7 @@ func GetCustomerWithStructures(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, customer)
+	c.JSON(http.StatusOK, buildCleanCustomerResponse(customer))
 }
 
 // @Summary Get customer with all relations
@@ -247,19 +294,21 @@ func GetCustomerWithAllRelations(c *gin.Context) {
 	id := c.Param("id")
 
 	var customer entity.Customer
-	result := config.DB.Preload("Addresses").
+	result := config.DB.Preload("AccountManager").Preload("Addresses").
 		Preload("Sosmeds").
 		Preload("Contacts").
 		Preload("Structures", func(db *gorm.DB) *gorm.DB {
 			return db.Order("level ASC, name ASC")
 		}).
+		Preload("Others").
+		Preload("Groups").
 		First(&customer, id)
 	if result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, customer)
+	c.JSON(http.StatusOK, buildCleanCustomerResponse(customer))
 }
 
 // @Summary Get customer full data

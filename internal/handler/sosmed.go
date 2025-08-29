@@ -170,17 +170,49 @@ func DeleteSosmed(c *gin.Context) {
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Router /api/customers/{id}/with-sosmeds [get]
+// Helper function to build clean customer response without unused fields
+func buildCleanCustomerResponseSosmed(customer entity.Customer) gin.H {
+	customerResponse := gin.H{
+		"id":           customer.ID,
+		"name":         customer.Name,
+		"brand_name":   customer.BrandName,
+		"code":         customer.Code,
+		"logo":         customer.Logo,
+		"status":       customer.Status,
+		"category":     customer.Category,
+		"rating":       customer.Rating,
+		"average_cost": customer.AverageCost,
+		"logo_small":   customer.LogoSmall,
+		"created_at":   customer.CreatedAt,
+		"updated_at":   customer.UpdatedAt,
+	}
+
+	// Add manager_name instead of account_manager_id
+	if customer.AccountManager != nil {
+		customerResponse["manager_name"] = customer.AccountManager.ManagerName
+	} else {
+		customerResponse["manager_name"] = nil
+	}
+
+	// Add relationships if they exist
+	if len(customer.Sosmeds) > 0 {
+		customerResponse["sosmeds"] = customer.Sosmeds
+	}
+
+	return customerResponse
+}
+
 func GetCustomerWithSosmeds(c *gin.Context) {
 	id := c.Param("id")
 
 	var customer entity.Customer
-	result := config.DB.Preload("Sosmeds").First(&customer, id)
+	result := config.DB.Preload("AccountManager").Preload("Sosmeds").First(&customer, id)
 	if result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, customer)
+	c.JSON(http.StatusOK, buildCleanCustomerResponseSosmed(customer))
 }
 
 // Get Customer with All Relations (Addresses and Sosmeds)

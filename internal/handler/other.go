@@ -176,16 +176,48 @@ func DeleteOther(c *gin.Context) {
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Router /api/customers/{id}/with-others [get]
+// Helper function to build clean customer response without unused fields
+func buildCleanCustomerResponseOther(customer entity.Customer) gin.H {
+	customerResponse := gin.H{
+		"id":           customer.ID,
+		"name":         customer.Name,
+		"brand_name":   customer.BrandName,
+		"code":         customer.Code,
+		"logo":         customer.Logo,
+		"status":       customer.Status,
+		"category":     customer.Category,
+		"rating":       customer.Rating,
+		"average_cost": customer.AverageCost,
+		"logo_small":   customer.LogoSmall,
+		"created_at":   customer.CreatedAt,
+		"updated_at":   customer.UpdatedAt,
+	}
+
+	// Add manager_name instead of account_manager_id
+	if customer.AccountManager != nil {
+		customerResponse["manager_name"] = customer.AccountManager.ManagerName
+	} else {
+		customerResponse["manager_name"] = nil
+	}
+
+	// Add relationships if they exist
+	if len(customer.Others) > 0 {
+		customerResponse["others"] = customer.Others
+	}
+
+	return customerResponse
+}
+
 func GetCustomerWithOthers(c *gin.Context) {
 	id := c.Param("id")
 	var customer entity.Customer
 
-	if result := config.DB.Preload("Others").First(&customer, id); result.Error != nil {
+	if result := config.DB.Preload("AccountManager").Preload("Others").First(&customer, id); result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, customer)
+	c.JSON(http.StatusOK, buildCleanCustomerResponseOther(customer))
 }
 
 // @Summary Get others by attribute name
@@ -249,9 +281,9 @@ func CreateOther(c *gin.Context) {
 	// Hapus validasi customer exists karena CustomerID tidak ada di request
 	other := entity.Other{
 		// CustomerID: req.CustomerID, // Akan diset sesuai kebutuhan
-		Key:        req.Key,
-		Value:      req.Value,
-		Active:     req.Active,
+		Key:    req.Key,
+		Value:  req.Value,
+		Active: req.Active,
 	}
 
 	result := config.DB.Create(&other)

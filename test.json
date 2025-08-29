@@ -1,0 +1,1427 @@
+{
+  "info": {
+    "name": "Customer API - Test Collection",
+    "description": "API test collection for Customer Management System",
+    "version": "1.0.0",
+    "baseUrl": "http://localhost:8080",
+    "notes": [
+      "Replace {{jwt_token}} with your actual JWT token from login",
+      "Replace {{customer_id}} with actual customer IDs from responses",
+      "Some endpoints may require existing data (customers, managers, etc.)"
+    ]
+  },
+  "auth": {
+    "register": {
+      "method": "POST",
+      "url": "/register",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "password123"
+      }
+    },
+    "login": {
+      "method": "POST",
+      "url": "/login",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "username": "testuser",
+        "password": "password123"
+      },
+      "response": {
+        "token": "{{jwt_token}}"
+      }
+    }
+  },
+  "endpoints": {
+    "customers": {
+      "create_customer": {
+        "method": "POST",
+        "url": "/api/customers",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "PT Digital Inovasi Indonesia",
+          "brandName": "DigiInno",
+          "code": "DIGI",
+          "manager_name": "Jane Smith",
+          "logo": null,
+          "addresses": [
+            {
+              "name": "Head Office",
+              "address": "Jl. Sudirman No. 123, Jakarta Selatan",
+              "isMain": true,
+              "active": true
+            }
+          ],
+          "socials": [
+            {
+              "platform": "Instagram",
+              "handle": "@digiinno_id",
+              "active": true
+            }
+          ],
+          "contacts": [
+            {
+              "name": "Budi Santoso",
+              "birthdate": "1985-03-15",
+              "jobPosition": "CEO",
+              "email": "budi@digiinno.com",
+              "phone": "021-5551234",
+              "mobile": "0812-3456-7890",
+              "isMain": true,
+              "active": true
+            }
+          ],
+          "structures": [
+            {
+              "name": "Board of Directors",
+              "level": 1,
+              "active": true
+            }
+          ],
+          "groups": [1, 2],
+          "others": [
+            {
+              "name": "Website",
+              "value": "https://digiinno.com",
+              "active": true
+            }
+          ]
+        }
+      },
+      "get_customers": {
+        "method": "GET",
+        "url": "/api/customers",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_customer": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_customer_with_addresses": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/with-addresses",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_customer_with_sosmeds": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/with-sosmeds",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_customer_with_contacts": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/with-contacts",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_customer_with_structures": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/with-structures",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_customer_with_all": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/with-all",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_customer_with_all_relations": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/with-all-relations",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_customer": {
+        "method": "PUT",
+        "url": "/api/customers/{{customer_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "PT Digital Inovasi Updated",
+          "brandName": "DigiInno Pro",
+          "code": "DIGI_UPD"
+        }
+      },
+      "delete_customer": {
+        "method": "DELETE",
+        "url": "/api/customers/{{customer_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_customer_stats": {
+        "method": "GET",
+        "url": "/api/customers/statistics",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "test_customer_json": {
+        "method": "POST",
+        "url": "/api/customers/test-json",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "PT Test Company",
+          "brandName": "TestCorp",
+          "code": "TEST001",
+          "manager_name": "John Doe"
+        }
+      },
+      "export_customers": {
+        "method": "GET",
+        "url": "/api/customers/export",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        },
+        "params": {
+          "format": "csv"
+        }
+      },
+      "get_customer_history": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/history",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "upload_customer_logo": {
+        "method": "POST",
+        "url": "/api/customers/{{customer_id}}/logo",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "multipart/form-data"
+        },
+        "notes": "Upload logo file as form data"
+      },
+      "update_customer_status": {
+        "method": "POST",
+        "url": "/api/customers/{{customer_id}}/status",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "status": "active"
+        }
+      },
+      "get_customer_status": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/status",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_customer_others": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/others",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_customer_with_others": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/with-others",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_customers_by_status": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/statuses",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_customer_events": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/events",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    },
+    "addresses": {
+      "create_address": {
+        "method": "POST",
+        "url": "/api/addresses",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "customer_id": "{{customer_id}}",
+          "name": "New Branch Office",
+          "address": "Jl. Gatot Subroto No. 789, Surabaya",
+          "main": false,
+          "active": true
+        }
+      },
+      "get_customer_addresses": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/addresses",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_address": {
+        "method": "GET",
+        "url": "/api/addresses/{{address_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_address": {
+        "method": "PUT",
+        "url": "/api/addresses/{{address_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Updated Branch Office",
+          "address": "Jl. Gatot Subroto No. 999, Surabaya",
+          "main": false,
+          "active": true
+        }
+      },
+      "delete_address": {
+        "method": "DELETE",
+        "url": "/api/addresses/{{address_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    },
+    "contacts": {
+      "create_contact": {
+        "method": "POST",
+        "url": "/api/contacts",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "customer_id": "{{customer_id}}",
+          "name": "Ahmad Rizki",
+          "birthdate": "1990-05-10",
+          "job_position": "Marketing Manager",
+          "email": "ahmad@digiinno.com",
+          "phone": "021-5551236",
+          "mobile": "0814-5678-9012",
+          "main": false,
+          "active": true
+        }
+      },
+      "get_customer_contacts": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/contacts",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_contact": {
+        "method": "GET",
+        "url": "/api/contacts/{{contact_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_contact": {
+        "method": "PUT",
+        "url": "/api/contacts/{{contact_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Ahmad Rizki Updated",
+          "birthdate": "1990-05-10",
+          "job_position": "Senior Marketing Manager",
+          "email": "ahmad.rizki@digiinno.com",
+          "phone": "021-5551236",
+          "mobile": "0814-5678-9012",
+          "main": false,
+          "active": true
+        }
+      },
+      "delete_contact": {
+        "method": "DELETE",
+        "url": "/api/contacts/{{contact_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    },
+    "social_media": {
+      "create_sosmed": {
+        "method": "POST",
+        "url": "/api/customers/{{customer_id}}/sosmeds",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "platform": "Twitter",
+          "handle": "@digiinno_official",
+          "active": true
+        },
+        "notes": "This endpoint exists in handler but not in routes - may not work"
+      },
+      "get_customer_sosmeds": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/sosmeds",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_sosmed": {
+        "method": "GET",
+        "url": "/api/sosmeds/{{sosmed_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_sosmed": {
+        "method": "PUT",
+        "url": "/api/sosmeds/{{sosmed_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "platform": "Twitter",
+          "handle": "@digiinno_new",
+          "active": true
+        }
+      },
+      "delete_sosmed": {
+        "method": "DELETE",
+        "url": "/api/sosmeds/{{sosmed_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    },
+    "structures": {
+      "create_structure": {
+        "method": "POST",
+        "url": "/api/structures",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "customer_id": "{{customer_id}}",
+          "name": "IT Department",
+          "level": 2,
+          "active": true
+        }
+      },
+      "get_customer_structures": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/structures",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_structure": {
+        "method": "GET",
+        "url": "/api/structures/{{structure_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_structure": {
+        "method": "PUT",
+        "url": "/api/structures/{{structure_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "IT & Digital Department",
+          "level": 2,
+          "active": true
+        }
+      },
+      "delete_structure": {
+        "method": "DELETE",
+        "url": "/api/structures/{{structure_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    },
+    "account_managers": {
+      "create_account_manager": {
+        "method": "POST",
+        "url": "/api/account-managers",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "manager_name": "John Doe",
+          "email": "john.doe@company.com",
+          "phone": "021-1234567",
+          "active": true
+        }
+      },
+      "get_account_managers": {
+        "method": "GET",
+        "url": "/api/account-managers",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_account_managers_dropdown": {
+        "method": "GET",
+        "url": "/api/account-managers/dropdown",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_roles_dropdown": {
+        "method": "GET",
+        "url": "/api/roles/dropdown",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_statuses_dropdown": {
+        "method": "GET",
+        "url": "/api/statuses/dropdown",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_stages_dropdown": {
+        "method": "GET",
+        "url": "/api/stages/dropdown",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_workflows_dropdown": {
+        "method": "GET",
+        "url": "/api/workflows/dropdown",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_activity_types_dropdown": {
+        "method": "GET",
+        "url": "/api/activity-types/dropdown",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    },
+      "get_account_manager": {
+        "method": "GET",
+        "url": "/api/account-managers/{{manager_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_account_manager": {
+        "method": "PUT",
+        "url": "/api/account-managers/{{manager_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "manager_name": "John Doe Updated",
+          "email": "john.doe.updated@company.com",
+          "phone": "021-1234568",
+          "active": true
+        }
+      },
+      "delete_account_manager": {
+        "method": "DELETE",
+        "url": "/api/account-managers/{{manager_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    },
+    "groups": {
+      "create_group": {
+        "method": "POST",
+        "url": "/api/groups",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Enterprise Clients",
+          "description": "Large enterprise customers",
+          "active": true
+        }
+      },
+      "get_groups": {
+        "method": "GET",
+        "url": "/api/groups",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_group": {
+        "method": "GET",
+        "url": "/api/groups/{{group_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_group": {
+        "method": "PUT",
+        "url": "/api/groups/{{group_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Premium Enterprise Clients",
+          "description": "High-value enterprise customers",
+          "active": true
+        }
+      },
+      "delete_group": {
+        "method": "DELETE",
+        "url": "/api/groups/{{group_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    },
+    "activities": {
+      "create_activity": {
+        "method": "POST",
+        "url": "/api/activities",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "customer_id": "{{customer_id}}",
+          "activity_type_id": 1,
+          "title": "Client Meeting",
+          "description": "Quarterly business review meeting",
+          "start_date": "2024-02-15T09:00:00Z",
+          "end_date": "2024-02-15T11:00:00Z",
+          "location": "Client Office",
+          "status": "scheduled"
+        }
+      },
+      "get_activities": {
+        "method": "GET",
+        "url": "/api/activities",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_activity": {
+        "method": "GET",
+        "url": "/api/activities/{{activity_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_activity": {
+        "method": "PUT",
+        "url": "/api/activities/{{activity_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "title": "Updated Client Meeting",
+          "description": "Updated quarterly business review meeting",
+          "start_date": "2024-02-15T10:00:00Z",
+          "end_date": "2024-02-15T12:00:00Z",
+          "location": "Conference Room A",
+          "status": "confirmed"
+        }
+      },
+      "delete_activity": {
+        "method": "DELETE",
+        "url": "/api/activities/{{activity_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "add_activity_attendees": {
+        "method": "POST",
+        "url": "/api/activities/{{activity_id}}/attendees",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "attendee_ids": ["{{contact_id1}}", "{{contact_id2}}"]
+        }
+      },
+      "remove_activity_attendees": {
+        "method": "DELETE",
+        "url": "/api/activities/{{activity_id}}/attendees",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "attendee_ids": ["{{contact_id1}}"]
+        }
+      },
+      "activity_checkin": {
+        "method": "POST",
+        "url": "/api/activities/{{activity_id}}/checkin",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "notes": "Meeting completed successfully"
+        }
+      }
+    },
+    "events": {
+      "create_event": {
+        "method": "POST",
+        "url": "/api/events",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "customer_id": "{{customer_id}}",
+          "title": "Product Launch Event",
+          "description": "Launch of new product line",
+          "event_date": "2024-03-01T14:00:00Z",
+          "location": "Convention Center",
+          "status": "planned"
+        }
+      },
+      "get_events": {
+        "method": "GET",
+        "url": "/api/events",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_event": {
+        "method": "GET",
+        "url": "/api/events/{{event_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_event": {
+        "method": "PUT",
+        "url": "/api/events/{{event_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "title": "Updated Product Launch Event",
+          "description": "Updated launch of new product line",
+          "event_date": "2024-03-01T15:00:00Z",
+          "location": "Grand Convention Center",
+          "status": "confirmed"
+        }
+      },
+      "delete_event": {
+        "method": "DELETE",
+        "url": "/api/events/{{event_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_event_by_type": {
+        "method": "GET",
+        "url": "/api/event/type/{{event_type}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    },
+    "others": {
+      "create_other": {
+        "method": "POST",
+        "url": "/api/others",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "customer_id": "{{customer_id}}",
+          "name": "Website",
+          "value": "https://example.com",
+          "active": true
+        }
+      },
+      "get_customer_others": {
+        "method": "GET",
+        "url": "/api/customers/{{customer_id}}/others",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_other": {
+        "method": "PUT",
+        "url": "/api/others/{{other_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Updated Website",
+          "value": "https://updated-example.com",
+          "active": true
+        }
+      },
+      "get_other": {
+        "method": "GET",
+        "url": "/api/others/{{other_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "delete_other": {
+        "method": "DELETE",
+        "url": "/api/others/{{other_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_others_by_attribute": {
+        "method": "GET",
+        "url": "/api/others/by-attribute",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        },
+        "params": {
+          "key": "industry_type"
+        }
+      }
+    },
+    "activity_types": {
+      "create_activity_type": {
+        "method": "POST",
+        "url": "/api/activity_types",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Meeting",
+          "description": "Business meetings",
+          "active": true
+        }
+      },
+      "get_activity_types": {
+        "method": "GET",
+        "url": "/api/activity_types",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_activity_type": {
+        "method": "GET",
+        "url": "/api/activity_types/{{activity_type_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_activity_type": {
+        "method": "PUT",
+        "url": "/api/activity_types/{{activity_type_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Updated Meeting",
+          "description": "Updated business meetings"
+        }
+      },
+      "delete_activity_type": {
+        "method": "DELETE",
+        "url": "/api/activity_types/{{activity_type_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    },
+    "roles": {
+      "create_role": {
+        "method": "POST",
+        "url": "/api/roles",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Administrator",
+          "description": "System administrator role",
+          "permissions": ["read", "write", "delete"],
+          "active": true
+        }
+      },
+      "get_roles": {
+        "method": "GET",
+        "url": "/api/roles",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_role": {
+        "method": "GET",
+        "url": "/api/roles/{{role_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_role": {
+        "method": "PUT",
+        "url": "/api/roles/{{role_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Updated Administrator",
+          "description": "Updated administrator role"
+        }
+      },
+      "delete_role": {
+        "method": "DELETE",
+        "url": "/api/roles/{{role_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    },
+    "statuses": {
+      "create_status": {
+        "method": "POST",
+        "url": "/api/statuses",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Active",
+          "description": "Active customer status",
+          "active": true
+        }
+      },
+      "get_statuses": {
+        "method": "GET",
+        "url": "/api/statuses",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_status": {
+        "method": "GET",
+        "url": "/api/statuses/{{status_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_status": {
+        "method": "PUT",
+        "url": "/api/statuses/{{status_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Updated Active",
+          "description": "Updated active status"
+        }
+      },
+      "delete_status": {
+        "method": "DELETE",
+        "url": "/api/statuses/{{status_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    },
+    "stages": {
+      "create_stage": {
+        "method": "POST",
+        "url": "/api/stages",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Initial Contact",
+          "description": "First stage of customer interaction",
+          "order": 1,
+          "active": true
+        }
+      },
+      "get_stages": {
+        "method": "GET",
+        "url": "/api/stages",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_stage": {
+        "method": "GET",
+        "url": "/api/stages/{{stage_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_stage": {
+        "method": "PUT",
+        "url": "/api/stages/{{stage_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Updated Initial Contact",
+          "description": "Updated first stage"
+        }
+      },
+      "delete_stage": {
+        "method": "DELETE",
+        "url": "/api/stages/{{stage_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_stage_details": {
+        "method": "GET",
+        "url": "/api/stages/{{stage_id}}/details",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "create_stage_detail": {
+        "method": "POST",
+        "url": "/api/stages/{{stage_id}}/details",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Phone Call",
+          "description": "Initial phone contact",
+          "required": true
+        }
+      },
+      "get_stage_detail": {
+        "method": "GET",
+        "url": "/api/stages/{{stage_id}}/details/{{detail_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_stage_detail": {
+        "method": "PUT",
+        "url": "/api/stages/{{stage_id}}/details/{{detail_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Updated Phone Call",
+          "description": "Updated phone contact"
+        }
+      },
+      "delete_stage_detail": {
+        "method": "DELETE",
+        "url": "/api/stages/{{stage_id}}/details/{{detail_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    },
+    "workflows": {
+      "create_workflow": {
+        "method": "POST",
+        "url": "/api/workflows",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Customer Onboarding",
+          "description": "Standard customer onboarding process",
+          "active": true
+        }
+      },
+      "get_workflows": {
+        "method": "GET",
+        "url": "/api/workflows",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_workflow": {
+        "method": "GET",
+        "url": "/api/workflows/{{workflow_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_workflow": {
+        "method": "PUT",
+        "url": "/api/workflows/{{workflow_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Updated Customer Onboarding",
+          "description": "Updated onboarding process"
+        }
+      },
+      "delete_workflow": {
+        "method": "DELETE",
+        "url": "/api/workflows/{{workflow_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_workflow_details": {
+        "method": "GET",
+        "url": "/api/workflows/{{workflow_id}}/details",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "create_workflow_detail": {
+        "method": "POST",
+        "url": "/api/workflows/{{workflow_id}}/details",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "step_name": "Document Collection",
+          "description": "Collect required documents",
+          "order": 1,
+          "required": true
+        }
+      },
+      "get_workflow_detail": {
+        "method": "GET",
+        "url": "/api/workflows/{{workflow_id}}/details/{{detail_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_workflow_detail": {
+        "method": "PUT",
+        "url": "/api/workflows/{{workflow_id}}/details/{{detail_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "step_name": "Updated Document Collection",
+          "description": "Updated document collection step"
+        }
+      },
+      "delete_workflow_detail": {
+        "method": "DELETE",
+        "url": "/api/workflows/{{workflow_id}}/details/{{detail_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    },
+    "group_configs": {
+      "create_group_config": {
+        "method": "POST",
+        "url": "/api/group-configs",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Industry Configuration",
+          "description": "Configuration for industry groups",
+          "active": true
+        }
+      },
+      "get_group_configs": {
+        "method": "GET",
+        "url": "/api/group-configs",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_group_config": {
+        "method": "GET",
+        "url": "/api/group-configs/{{config_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_group_config": {
+        "method": "PUT",
+        "url": "/api/group-configs/{{config_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Updated Industry Configuration",
+          "description": "Updated industry configuration"
+        }
+      },
+      "delete_group_config": {
+        "method": "DELETE",
+        "url": "/api/group-configs/{{config_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "get_group_config_details": {
+        "method": "GET",
+        "url": "/api/group-configs/{{config_id}}/details",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "create_group_config_detail": {
+        "method": "POST",
+        "url": "/api/group-configs/{{config_id}}/details",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "config_key": "max_customers",
+          "config_value": "1000",
+          "description": "Maximum customers per group"
+        }
+      },
+      "get_group_config_detail": {
+        "method": "GET",
+        "url": "/api/group-configs/{{config_id}}/details/{{detail_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_group_config_detail": {
+        "method": "PUT",
+        "url": "/api/group-configs/{{config_id}}/details/{{detail_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "config_key": "max_customers_updated",
+          "config_value": "1500"
+        }
+      },
+      "delete_group_config_detail": {
+        "method": "DELETE",
+        "url": "/api/group-configs/{{config_id}}/details/{{detail_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    },
+    "invoices": {
+      "note": "Invoice endpoints exist in handlers but are currently commented out in routes",
+      "create_invoice": {
+        "method": "POST",
+        "url": "/api/invoices",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "customer_id": 1,
+          "project_id": "PRJ-2024-001",
+          "invoice_number": "INV-2024-001",
+          "amount": 5000000,
+          "issued_date": "2024-01-15T00:00:00Z",
+          "due_date": "2024-02-15T00:00:00Z",
+          "paid_amount": 0
+        }
+      },
+      "get_invoices": {
+        "method": "GET",
+        "url": "/api/invoices",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        },
+        "params": {
+          "page": 1,
+          "limit": 10,
+          "customer_id": "{{customer_id}}",
+          "status": "unpaid"
+        }
+      },
+      "get_invoice": {
+        "method": "GET",
+        "url": "/api/invoices/{{invoice_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_invoice": {
+        "method": "PUT",
+        "url": "/api/invoices/{{invoice_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "amount": 5500000,
+          "due_date": "2024-03-15T00:00:00Z"
+        }
+      },
+      "delete_invoice": {
+        "method": "DELETE",
+        "url": "/api/invoices/{{invoice_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    },
+    "payments": {
+      "note": "Payment endpoints exist in handlers but are currently commented out in routes",
+      "create_payment": {
+        "method": "POST",
+        "url": "/api/payments",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "invoice_id": 1,
+          "amount": 2500000,
+          "paid_at": "2024-01-20T10:00:00Z",
+          "payment_method": "bank_transfer",
+          "notes": "Partial payment - 50%"
+        }
+      },
+      "get_payments": {
+        "method": "GET",
+        "url": "/api/payments",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        },
+        "params": {
+          "page": 1,
+          "limit": 10,
+          "invoice_id": "{{invoice_id}}"
+        }
+      },
+      "get_payment": {
+        "method": "GET",
+        "url": "/api/payments/{{payment_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      },
+      "update_payment": {
+        "method": "PUT",
+        "url": "/api/payments/{{payment_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "amount": 3000000,
+          "paid_at": "2024-01-21T10:00:00Z"
+        }
+      },
+      "delete_payment": {
+        "method": "DELETE",
+        "url": "/api/payments/{{payment_id}}",
+        "headers": {
+          "Authorization": "Bearer {{jwt_token}}"
+        }
+      }
+    }
+  ,
+  "usage_instructions": {
+    "authentication": {
+      "step1": "First register a new user using the /register endpoint",
+      "step2": "Login using the /login endpoint to get JWT token",
+      "step3": "Replace {{jwt_token}} in all protected endpoints with the actual token"
+    },
+    "testing_flow": {
+      "step1": "Start with authentication endpoints",
+      "step2": "Create account managers first (for customer relationships)",
+      "step3": "Create customers with the provided comprehensive data",
+      "step4": "Test customer relationship endpoints (addresses, contacts, etc.)",
+      "step5": "Test other modules (activities, events, groups, etc.)"
+    },
+    "variable_replacement": {
+      "{{jwt_token}}": "Replace with actual JWT token from login response",
+      "{{customer_id}}": "Replace with actual customer ID from create/get customer response",
+      "{{manager_id}}": "Replace with actual account manager ID",
+      "{{address_id}}": "Replace with actual address ID",
+      "{{contact_id}}": "Replace with actual contact ID",
+      "{{structure_id}}": "Replace with actual structure ID",
+      "{{group_id}}": "Replace with actual group ID",
+      "{{activity_id}}": "Replace with actual activity ID",
+      "{{event_id}}": "Replace with actual event ID",
+      "{{role_id}}": "Replace with actual role ID",
+      "{{status_id}}": "Replace with actual status ID",
+      "{{stage_id}}": "Replace with actual stage ID",
+      "{{workflow_id}}": "Replace with actual workflow ID",
+      "{{config_id}}": "Replace with actual group config ID",
+      "{{detail_id}}": "Replace with actual detail ID",
+      "{{invoice_id}}": "Replace with actual invoice ID",
+      "{{payment_id}}": "Replace with actual payment ID",
+      "{{sosmed_id}}": "Replace with actual social media ID",
+      "{{other_id}}": "Replace with actual other attribute ID"
+    },
+    "notes": [
+      "All endpoints require valid JWT token except /register and /login",
+      "The POST /api/customers endpoint includes the complete customer data provided by user",
+      "Some endpoints may require prerequisite data (e.g., customer must exist before creating addresses)",
+      "Replace placeholder IDs with actual IDs from your API responses",
+      "Test endpoints in logical order to avoid dependency issues",
+      "Invoice and Payment endpoints exist in handlers but are currently commented out in routes",
+      "Request bodies have been updated to match actual DTO structures from the API server",
+      "Customer_id fields have been removed from request bodies as they're passed via URL parameters",
+      "Social media creation endpoint POST /api/customers/:id/sosmeds is available but not in current routes",
+      "All request bodies follow the exact structure expected by the API handlers"
+    ]
+  }}

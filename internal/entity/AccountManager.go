@@ -9,11 +9,14 @@ import (
 )
 
 type AccountManager struct {
-	ID          string         `gorm:"type:varchar(5);primaryKey" json:"-"`
+	ID          string         `gorm:"type:varchar(5);primaryKey" json:"id"`
 	ManagerName string         `gorm:"type:varchar(255);not null" json:"manager_name"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+
+	// Relations
+	Customers []Customer `json:"customers,omitempty" gorm:"foreignKey:AccountManagerID"`
 }
 
 // BeforeCreate hook untuk generate UUID dan ID

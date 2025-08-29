@@ -34,12 +34,12 @@ func CreateAccountManager(c *gin.Context) {
 		return
 	}
 
-	// Convert to response DTO
-	response := dto.AccountManagerResponse{
+	// Convert to simplified response DTO (excluding unnecessary fields)
+	response := dto.AccountManagerListResponse{
 		ID:          accountManager.ID,
 		ManagerName: accountManager.ManagerName,
-		CreatedAt:   accountManager.CreatedAt,
-		UpdatedAt:   accountManager.UpdatedAt,
+		CreatedAt:   accountManager.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:   accountManager.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
@@ -56,26 +56,26 @@ func GetAccountManagers(c *gin.Context) {
 		return
 	}
 
-	// Convert to response DTOs
-	var responses []dto.AccountManagerResponse
+	// Convert to simplified response DTOs (excluding unnecessary fields)
+	var responses []dto.AccountManagerListResponse
 	for _, am := range accountManagers {
-		responses = append(responses, dto.AccountManagerResponse{
+		responses = append(responses, dto.AccountManagerListResponse{
 			ID:          am.ID,
 			ManagerName: am.ManagerName,
-			CreatedAt:   am.CreatedAt,
-			UpdatedAt:   am.UpdatedAt,
+			CreatedAt:   am.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:   am.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		})
 	}
 
 	c.JSON(http.StatusOK, responses)
 }
 
-// GetAccountManager gets a specific account manager by UUID
+// GetAccountManager gets a specific account manager by ID
 func GetAccountManager(c *gin.Context) {
-	uuid := c.Param("id")
+	id := c.Param("id")
 	var accountManager entity.AccountManager
 
-	if result := config.DB.Where("uuid = ?", uuid).First(&accountManager); result.Error != nil {
+	if result := config.DB.Where("id = ?", id).First(&accountManager); result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Account manager tidak ditemukan"})
 		return
 	}
@@ -84,8 +84,9 @@ func GetAccountManager(c *gin.Context) {
 	response := dto.AccountManagerResponse{
 		ID:          accountManager.ID,
 		ManagerName: accountManager.ManagerName,
-		CreatedAt:   accountManager.CreatedAt,
-		UpdatedAt:   accountManager.UpdatedAt,
+
+		CreatedAt: accountManager.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt: accountManager.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -93,10 +94,10 @@ func GetAccountManager(c *gin.Context) {
 
 // UpdateAccountManager updates an existing account manager
 func UpdateAccountManager(c *gin.Context) {
-	uuid := c.Param("id")
+	id := c.Param("id")
 	var accountManager entity.AccountManager
 
-	if result := config.DB.Where("uuid = ?", uuid).First(&accountManager); result.Error != nil {
+	if result := config.DB.Where("id = ?", id).First(&accountManager); result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Account manager tidak ditemukan"})
 		return
 	}
@@ -110,7 +111,7 @@ func UpdateAccountManager(c *gin.Context) {
 	// Check if manager name already exists (exclude current manager)
 	if input.ManagerName != nil {
 		var existingManager entity.AccountManager
-		if result := config.DB.Where("manager_name = ? AND uuid != ?", *input.ManagerName, uuid).First(&existingManager); result.Error == nil {
+		if result := config.DB.Where("manager_name = ? AND id != ?", *input.ManagerName, id).First(&existingManager); result.Error == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Manager name sudah digunakan"})
 			return
 		}
@@ -126,8 +127,9 @@ func UpdateAccountManager(c *gin.Context) {
 	response := dto.AccountManagerResponse{
 		ID:          accountManager.ID,
 		ManagerName: accountManager.ManagerName,
-		CreatedAt:   accountManager.CreatedAt,
-		UpdatedAt:   accountManager.UpdatedAt,
+
+		CreatedAt: accountManager.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt: accountManager.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -138,10 +140,10 @@ func UpdateAccountManager(c *gin.Context) {
 
 // DeleteAccountManager deletes an account manager
 func DeleteAccountManager(c *gin.Context) {
-	uuid := c.Param("id")
+	id := c.Param("id")
 	var accountManager entity.AccountManager
 
-	if result := config.DB.Where("uuid = ?", uuid).First(&accountManager); result.Error != nil {
+	if result := config.DB.Where("id = ?", id).First(&accountManager); result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Account manager tidak ditemukan"})
 		return
 	}
@@ -160,4 +162,33 @@ func DeleteAccountManager(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Account manager berhasil dihapus"})
+}
+
+// @Summary Get account managers for dropdown
+// @Description Get simplified list of account managers for dropdown selection (ID and manager_name only)
+// @Tags AccountManager
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} dto.AccountManagerDetail
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/account-managers/dropdown [get]
+func GetAccountManagersDropdown(c *gin.Context) {
+	var accountManagers []entity.AccountManager
+	if result := config.DB.Select("id, manager_name").Find(&accountManagers); result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data account managers"})
+		return
+	}
+
+	// Convert to simplified response for dropdown
+	var dropdownOptions []dto.AccountManagerDetail
+	for _, am := range accountManagers {
+		dropdownOptions = append(dropdownOptions, dto.AccountManagerDetail{
+			ID:          am.ID,
+			ManagerName: am.ManagerName,
+		})
+	}
+
+	c.JSON(http.StatusOK, dropdownOptions)
 }

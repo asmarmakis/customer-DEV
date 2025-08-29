@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"net/http"
-	"time"
 	"customer-api/internal/config"
 	"customer-api/internal/dto"
 	"customer-api/internal/entity"
+	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	// Hapus import "gorm.io/gorm" karena tidak digunakan
@@ -190,15 +190,47 @@ func DeleteContact(c *gin.Context) {
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Router /api/customers/{id}/with-contacts [get]
+// Helper function to build clean customer response without unused fields
+func buildCleanCustomerResponseContact(customer entity.Customer) gin.H {
+	customerResponse := gin.H{
+		"id":           customer.ID,
+		"name":         customer.Name,
+		"brand_name":   customer.BrandName,
+		"code":         customer.Code,
+		"logo":         customer.Logo,
+		"status":       customer.Status,
+		"category":     customer.Category,
+		"rating":       customer.Rating,
+		"average_cost": customer.AverageCost,
+		"logo_small":   customer.LogoSmall,
+		"created_at":   customer.CreatedAt,
+		"updated_at":   customer.UpdatedAt,
+	}
+
+	// Add manager_name instead of account_manager_id
+	if customer.AccountManager != nil {
+		customerResponse["manager_name"] = customer.AccountManager.ManagerName
+	} else {
+		customerResponse["manager_name"] = nil
+	}
+
+	// Add relationships if they exist
+	if len(customer.Contacts) > 0 {
+		customerResponse["contacts"] = customer.Contacts
+	}
+
+	return customerResponse
+}
+
 func GetCustomerWithContacts(c *gin.Context) {
 	id := c.Param("id")
 
 	var customer entity.Customer
-	result := config.DB.Preload("Contacts").First(&customer, id)
+	result := config.DB.Preload("AccountManager").Preload("Contacts").First(&customer, id)
 	if result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, customer)
+	c.JSON(http.StatusOK, buildCleanCustomerResponseContact(customer))
 }

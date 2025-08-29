@@ -9,6 +9,7 @@ import (
 func RegisterAccountManagerRoutes(r *gin.RouterGroup) {
 	r.POST("/account-managers", handler.CreateAccountManager)
 	r.GET("/account-managers", handler.GetAccountManagers)
+	r.GET("/account-managers/dropdown", handler.GetAccountManagersDropdown) // Endpoint khusus untuk dropdown
 	r.GET("/account-managers/:id", handler.GetAccountManager)
 	r.PUT("/account-managers/:id", handler.UpdateAccountManager)
 	r.DELETE("/account-managers/:id", handler.DeleteAccountManager)

@@ -6,13 +6,12 @@ import (
 
 	"customer-api/internal/config"
 	"customer-api/internal/entity"
+
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm" 
+	"gorm.io/gorm"
 
 	"customer-api/internal/dto"
 )
-
-
 
 // @Summary Get all Events
 // @Description Get list of all events
@@ -57,14 +56,12 @@ func ReadEvents(c *gin.Context) {
 		return
 	}
 
-
 	c.JSON(http.StatusOK, dto.Response{
-			Status:  http.StatusOK,
-			Message: "Events retrieved successfully",
-			Data:    events,
-		})
+		Status:  http.StatusOK,
+		Message: "Events retrieved successfully",
+		Data:    events,
+	})
 }
-
 
 // @Summary Create a new Event
 // @Description Create a new event
@@ -93,14 +90,13 @@ func CreateEvents(c *gin.Context) {
 	c.JSON(http.StatusCreated, event)
 }
 
-
 // @Summary Get a Event by ID
 // @Description Get a event by ID
 // @Tags Events
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param id path int true "ID"
+// @Param id path string true "Event ID"
 // @Success 200 {object} entity.Event
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
@@ -109,7 +105,7 @@ func CreateEvents(c *gin.Context) {
 func ReadOneEvents(c *gin.Context) {
 	var event entity.Event
 	id := c.Param("id")
-	if result := config.DB.First(&event, id); result.Error != nil {
+	if result := config.DB.Where("id = ?", id).First(&event); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Event not found"})
 		} else {
@@ -120,14 +116,13 @@ func ReadOneEvents(c *gin.Context) {
 	c.JSON(http.StatusOK, event)
 }
 
-
 // @Summary Update a Event by ID
 // @Description Update a event by ID
 // @Tags Events
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param id path int true "ID"
+// @Param id path string true "Event ID"
 // @Param event body entity.Event true "Event"
 // @Success 200 {object} entity.Event
 // @Failure 400 {object} dto.ErrorResponse
@@ -143,7 +138,7 @@ func UpdateEvents(c *gin.Context) {
 		return
 	}
 
-	if result := config.DB.First(&event, id); result.Error != nil {
+	if result := config.DB.Where("id = ?", id).First(&event); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Event not found"})
 		} else {
@@ -160,14 +155,13 @@ func UpdateEvents(c *gin.Context) {
 	c.JSON(http.StatusOK, event)
 }
 
-
 // @Summary Delete a Event by ID
 // @Description Delete a event by ID
 // @Tags Events
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param id path int true "ID"
+// @Param id path string true "Event ID"
 // @Success 204
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
@@ -176,7 +170,7 @@ func UpdateEvents(c *gin.Context) {
 func DeleteEvents(c *gin.Context) {
 	var event entity.Event
 	id := c.Param("id")
-	if result := config.DB.First(&event, id); result.Error != nil {
+	if result := config.DB.Where("id = ?", id).First(&event); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Event not found"})
 		} else {
@@ -199,7 +193,7 @@ func DeleteEvents(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param id path int true "Customer ID"
+// @Param id path string true "Customer ID"
 // @Success 200 {array} entity.Event
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
@@ -248,5 +242,3 @@ func GetEventType(c *gin.Context) {
 
 	c.JSON(http.StatusOK, events)
 }
-
-

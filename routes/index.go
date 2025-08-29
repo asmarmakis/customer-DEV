@@ -13,6 +13,7 @@ func RegisterRoutes(r *gin.Engine) {
 	// Public routes
 	r.POST("/register", handler.Register)
 	r.POST("/login", handler.Login)
+	r.POST("/setup-default-roles", handler.SetupDefaultRoles)
 
 	// Protected routes
 	protected := r.Group("/api")
@@ -33,9 +34,11 @@ func RegisterRoutes(r *gin.Engine) {
 	route.RegisterPaymentRoutes(protected)
 	route.RegisterStatusRoutes(protected)
 	route.RegisterEventsRoutes(protected)
+	route.RegisterProjectRoutes(protected)
 	route.RegisterActivityTypeRoutes(protected)
 	route.RegisterStagesRoutes(protected)
 	route.RegisterWorkflowsRoutes(protected)
 	route.RegisterGroupConfig(protected)
-	
+	route.RegisterAssessmentRoutes(protected)
+
 }
